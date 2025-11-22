@@ -1,12 +1,25 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import Constants from 'expo-constants';
 
-// URL base de tu backend - cambia esto según donde esté desplegado
-// Para Android Emulator usa: 10.0.2.2
-// Para dispositivo físico/Expo Go usa tu IP local: 192.168.0.x
-export const API_BASE_URL = __DEV__ 
-  ? 'http://172.20.114.229:4000/api' // Desarrollo local - IP actual de tu máquina
-  : 'https://tu-backend-url.com/api'; // Producción
+// Detección automática de IP local desde Expo
+const getApiUrl = () => {
+  if (__DEV__) {
+    // Obtiene la IP local que Expo usa para el Metro bundler
+    const debuggerHost = Constants.expoConfig?.hostUri;
+    if (debuggerHost) {
+      const ip = debuggerHost.split(':')[0];
+      console.log('API conectando a:', `http://${ip}:4000/api`);
+      return `http://${ip}:4000/api`;
+    }
+    // Fallback si no detecta IP
+    return 'http://localhost:4000/api';
+  }
+  // Producción (cuando hagas build para publicar)
+  return 'https://tu-backend-url.com/api';
+};
+
+export const API_BASE_URL = getApiUrl();
 
 // Crear instancia de axios con configuración base
 const api = axios.create({
@@ -35,10 +48,10 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    console.log('API Error:', error.message);
+    console.log('❌ API Error:', error.message);
     if (error.response) {
-      console.log('Response status:', error.response.status);
-      console.log('Response data:', error.response.data);
+      console.log('📡 Response status:', error.response.status);
+      console.log('📄 Response data:', error.response.data);
       
       if (error.response.status === 401) {
         // Token expirado o inválido - limpiar sesión
@@ -46,7 +59,7 @@ api.interceptors.response.use(
         await AsyncStorage.removeItem('user');
       }
     } else if (error.request) {
-      console.log('No response received:', error.request);
+      console.log('⚠️  No response received - Backend no alcanzable');
     }
     return Promise.reject(error);
   }
