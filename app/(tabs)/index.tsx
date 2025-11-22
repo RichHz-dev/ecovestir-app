@@ -112,7 +112,10 @@ export default function HomeScreen() {
             <Ionicons name="checkmark-circle" size={18} color={GREEN} />
             <Text style={styles.heroBadgeText}>Algodón orgánico certificado</Text>
           </View>
-          <TouchableOpacity style={styles.heroButton}>
+          <TouchableOpacity 
+            style={styles.heroButton}
+            onPress={() => router.push('/products')}
+          >
             <Text style={styles.heroButtonText}>Explorar Colección</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.heroButtonOutline}>
@@ -170,24 +173,35 @@ export default function HomeScreen() {
         </View>
 
         {/* View All Button */}
-        <TouchableOpacity style={styles.viewAllButton}>
+        <TouchableOpacity 
+          style={styles.viewAllButton}
+          onPress={() => router.push('/products')}
+        >
           <Text style={styles.viewAllButtonText}>Ver Todos los Productos</Text>
         </TouchableOpacity>
 
         {/* Categories Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Nuestras Categorías</Text>
-          <Text style={styles.sectionSubtitle}>
-            Explora nuestra amplia gama de categorías de ropa orgánica.
-          </Text>
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={styles.sectionTitle}>Nuestras Categorías</Text>
+              <Text style={styles.sectionSubtitle}>
+                Explora nuestra amplia gama de categorías de ropa orgánica.
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => router.push('/categories')}>
+              <Text style={styles.seeAllText}>Ver todas</Text>
+            </TouchableOpacity>
+          </View>
           {categories.length > 0 ? (
-            categories.map((category) => (
+            categories.slice(0, 3).map((category) => (
               <CategoryCard
                 key={category._id}
                 title={category.name}
                 image={category.image && category.image !== 'https://via.placeholder.com/400x400?text=Sin+Imagen'
                   ? { uri: category.image }
                   : require('@/assets/images/react-logo.png')}
+                onPress={() => router.push(`/products?category=${category._id}`)}
               />
             ))
           ) : (
@@ -400,6 +414,12 @@ const styles = StyleSheet.create({
   section: {
     padding: 24,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
   sectionTitle: {
     fontSize: 24,
     fontWeight: '800',
@@ -409,8 +429,13 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     fontSize: 14,
     color: '#6B7280',
-    marginBottom: 20,
     lineHeight: 20,
+  },
+  seeAllText: {
+    fontSize: 14,
+    color: GREEN,
+    fontWeight: '600',
+    marginTop: 4,
   },
   productsScroll: {
     marginHorizontal: -24,
