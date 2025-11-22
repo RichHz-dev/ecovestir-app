@@ -1,5 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +9,7 @@ const logo = require('../assets/logo.png');
 
 export default function LoginScreen() {
   const { login, register } = useAuth();
+  const router = useRouter();
   
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
@@ -16,6 +18,7 @@ export default function LoginScreen() {
   const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
 
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -50,6 +53,11 @@ export default function LoginScreen() {
     
     if (mode === 'register' && password !== confirm) {
       Alert.alert('Error', 'Las contraseñas no coinciden');
+      return;
+    }
+    
+    if (mode === 'register' && !acceptTerms) {
+      Alert.alert('Error', 'Debes aceptar los términos y condiciones');
       return;
     }
 
@@ -165,6 +173,26 @@ export default function LoginScreen() {
             </TouchableOpacity>
           )}
 
+          {mode === 'register' && (
+            <TouchableOpacity 
+              style={styles.termsContainer} 
+              onPress={() => setAcceptTerms(!acceptTerms)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.checkbox, acceptTerms && styles.checkboxActive]}>
+                {acceptTerms && (
+                  <Ionicons name="checkmark" size={16} color="#fff" />
+                )}
+              </View>
+              <Text style={styles.termsText}>
+                Acepto los{' '}
+                <Text style={styles.termsLink}>términos y condiciones</Text>
+                {' '}y la{' '}
+                <Text style={styles.termsLink}>política de privacidad</Text>
+              </Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity 
             style={[styles.primaryButton, isLoading && styles.buttonDisabled]} 
             onPress={handleSubmit}
@@ -195,6 +223,10 @@ export default function LoginScreen() {
             </View>
           )}
         </View>
+
+        <TouchableOpacity style={styles.backButton} onPress={() => router.push('/(tabs)')}>
+          <Text style={styles.backButtonText}>Volver al Inicio</Text>
+        </TouchableOpacity>
 
       </ScrollView>
     </SafeAreaView>
@@ -230,5 +262,12 @@ const styles = StyleSheet.create({
   primaryButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   bottomNote: { flexDirection: 'row', justifyContent: 'center', marginTop: 16 },
   small: { color: '#6b7280', fontSize: 14 },
-  inlineLinkText: { color: GREEN, fontSize: 14, fontWeight: '600' }
+  inlineLinkText: { color: GREEN, fontSize: 14, fontWeight: '600' },
+  backButton: { width: '100%', maxWidth: 400, marginTop: 20, borderWidth: 2, borderColor: GREEN, borderRadius: 10, paddingVertical: 14, alignItems: 'center', backgroundColor: 'transparent' },
+  backButtonText: { color: GREEN, fontSize: 16, fontWeight: '600' },
+  termsContainer: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16, marginTop: 4 },
+  checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: '#d1d5db', marginRight: 10, marginTop: 2, justifyContent: 'center', alignItems: 'center' },
+  checkboxActive: { backgroundColor: GREEN, borderColor: GREEN },
+  termsText: { flex: 1, fontSize: 13, color: '#6b7280', lineHeight: 18 },
+  termsLink: { color: GREEN, fontWeight: '600' }
 });

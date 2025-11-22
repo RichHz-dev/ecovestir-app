@@ -5,7 +5,7 @@ import axios from 'axios';
 // Para Android Emulator usa: 10.0.2.2
 // Para dispositivo físico/Expo Go usa tu IP local: 192.168.0.x
 export const API_BASE_URL = __DEV__ 
-  ? 'http://192.168.0.181:4000/api' // Desarrollo local - cambia a tu IP
+  ? 'http://172.20.114.229:4000/api' // Desarrollo local - IP actual de tu máquina
   : 'https://tu-backend-url.com/api'; // Producción
 
 // Crear instancia de axios con configuración base
