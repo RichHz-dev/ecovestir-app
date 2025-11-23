@@ -5,10 +5,9 @@ import { Category, Product } from '@/types/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   Image,
   ScrollView,
   StyleSheet,
@@ -17,8 +16,9 @@ import {
   View,
 } from 'react-native';
 
-const { width } = Dimensions.get('window');
 const GREEN = '#00a63e';
+const CARD_WIDTH = 180;
+const CARD_MARGIN = 12;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -26,10 +26,27 @@ export default function HomeScreen() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     loadData();
   }, []);
+
+  // Auto-scroll para productos
+  useEffect(() => {
+    if (products.length <= 1) return;
+
+    let currentIndex = 0;
+    const interval = setInterval(() => {
+      currentIndex = (currentIndex + 1) % products.length;
+      scrollViewRef.current?.scrollTo({
+        x: currentIndex * (CARD_WIDTH + CARD_MARGIN),
+        animated: true,
+      });
+    }, 2000); // Cambiar cada 2 segundos
+
+    return () => clearInterval(interval);
+  }, [products.length]);
 
   const loadData = async () => {
     try {
@@ -38,7 +55,7 @@ export default function HomeScreen() {
 
       // Cargar productos y categorías en paralelo
       const [productsData, categoriesData] = await Promise.all([
-        getProducts({ limit: 6, sort: '-rating' }), // Top 6 productos mejor calificados
+        getProducts({ limit: 4, sort: '-rating' }), // Top 4 productos mejor calificados
         getCategories({ limit: 4, isActive: true }) // Top 4 categorías activas
       ]);
 
@@ -106,7 +123,7 @@ export default function HomeScreen() {
           <Text style={styles.heroTitle}>Ropa Orgánica Para un Futuro Sostenible</Text>
           <Text style={styles.heroDescription}>
             Descubre nuestra colección de ropa fabricada con materiales 100% orgánicos. Y recuerda,
-            nuestro salario debe ser tu Vida, ¡Viste mejor!
+            nuestro sello siempre sera ¡Viste bien. Viste mejor!
           </Text>
           <View style={styles.heroBadge}>
             <Ionicons name="checkmark-circle" size={18} color={GREEN} />
@@ -149,14 +166,18 @@ export default function HomeScreen() {
           </Text>
           {products.length > 0 ? (
             <ScrollView
+              ref={scrollViewRef}
               horizontal
               showsHorizontalScrollIndicator={false}
               style={styles.productsScroll}
               contentContainerStyle={styles.productsScrollContent}
+              pagingEnabled={false}
+              decelerationRate="fast"
             >
               {products.map((product) => (
                 <ProductCard
                   key={product._id}
+                  id={product._id}
                   name={product.name}
                   price={product.price}
                   rating={product.rating}
@@ -164,6 +185,7 @@ export default function HomeScreen() {
                     ? { uri: product.images[0] } 
                     : require('@/assets/images/react-logo.png')}
                   isOrganic={product.ecoFriendly}
+                  onPress={() => router.push(`/product-detail?id=${product._id}`)}
                 />
               ))}
             </ScrollView>
@@ -182,28 +204,31 @@ export default function HomeScreen() {
 
         {/* Categories Section */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View>
-              <Text style={styles.sectionTitle}>Nuestras Categorías</Text>
-              <Text style={styles.sectionSubtitle}>
-                Explora nuestra amplia gama de categorías de ropa orgánica.
-              </Text>
-            </View>
-            <TouchableOpacity onPress={() => router.push('/categories')}>
-              <Text style={styles.seeAllText}>Ver todas</Text>
-            </TouchableOpacity>
+          <View>
+            <Text style={styles.sectionTitle}>Nuestras Categorías</Text>
+            <Text style={styles.sectionSubtitle}>
+              Explora nuestra amplia gama de categorías de ropa orgánica.
+            </Text>
           </View>
           {categories.length > 0 ? (
-            categories.slice(0, 3).map((category) => (
-              <CategoryCard
-                key={category._id}
-                title={category.name}
-                image={category.image && category.image !== 'https://via.placeholder.com/400x400?text=Sin+Imagen'
-                  ? { uri: category.image }
-                  : require('@/assets/images/react-logo.png')}
-                onPress={() => router.push(`/products?category=${category._id}`)}
-              />
-            ))
+            <>
+              {categories.slice(0, 3).map((category) => (
+                <CategoryCard
+                  key={category._id}
+                  title={category.name}
+                  image={category.image && category.image !== 'https://via.placeholder.com/400x400?text=Sin+Imagen'
+                    ? { uri: category.image }
+                    : require('@/assets/images/react-logo.png')}
+                  onPress={() => router.push(`/products?categoryId=${category._id}`)}
+                />
+              ))}
+              <TouchableOpacity 
+                style={styles.seeAllCategoriesButton}
+                onPress={() => router.push('/categories')}
+              >
+                <Text style={styles.seeAllCategoriesText}>Ver Todas as Categorías</Text>
+              </TouchableOpacity>
+            </>
           ) : (
             <Text style={styles.emptyText}>No hay categorías disponibles</Text>
           )}
@@ -424,12 +449,15 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
     color: '#1F2937',
-    marginBottom: 8,
+    marginBottom: 4,
+    textAlign: 'center',
   },
   sectionSubtitle: {
     fontSize: 14,
     color: '#6B7280',
     lineHeight: 20,
+    marginBottom: 16,
+    textAlign: 'center',
   },
   seeAllText: {
     fontSize: 14,
@@ -437,19 +465,35 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 4,
   },
+  seeAllCategoriesButton: {
+    marginTop: 16,
+    alignSelf: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 32,
+    backgroundColor: '#D1FAE5',
+    borderRadius: 20,
+  },
+  seeAllCategoriesText: {
+    fontSize: 15,
+    color: GREEN,
+    fontWeight: '700',
+  },
   productsScroll: {
     marginHorizontal: -24,
   },
   productsScrollContent: {
     paddingHorizontal: 24,
+    paddingVertical: 8,
   },
   viewAllButton: {
     backgroundColor: GREEN,
-    marginHorizontal: 24,
+    marginHorizontal: 'auto',
     marginBottom: 32,
-    paddingVertical: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 32,
     borderRadius: 25,
     alignItems: 'center',
+    alignSelf: 'center',
     shadowColor: GREEN,
     shadowOffset: {
       width: 0,
@@ -461,7 +505,7 @@ const styles = StyleSheet.create({
   },
   viewAllButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
   },
   benefitsSection: {

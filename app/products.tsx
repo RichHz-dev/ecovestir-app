@@ -1,17 +1,17 @@
+import { ProductCard } from '@/components/product-card';
 import { getCategories, getProducts } from '@/services/api';
 import { Category, Product } from '@/types/api';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    Image,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -19,9 +19,10 @@ const GREEN = '#00a63e';
 
 export default function ProductsScreen() {
   const router = useRouter();
+  const { categoryId } = useLocalSearchParams<{ categoryId?: string }>();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(categoryId || null);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [totalProducts, setTotalProducts] = useState(0);
@@ -67,32 +68,18 @@ export default function ProductsScreen() {
   };
 
   const renderProductCard = ({ item }: { item: Product }) => (
-    <View style={styles.productCard}>
-      <View style={styles.imageContainer}>
-        <Image
-          source={
-            item.images && item.images[0]
-              ? { uri: item.images[0] }
-              : require('@/assets/images/react-logo.png')
-          }
-          style={styles.productImage}
-          resizeMode="cover"
-        />
-        <TouchableOpacity style={styles.favoriteButton}>
-          <Ionicons name="heart-outline" size={20} color="#1F2937" />
-        </TouchableOpacity>
-        {item.ecoFriendly && (
-          <View style={styles.ecoLabel}>
-            <Ionicons name="leaf" size={16} color="#FFFFFF" />
-          </View>
-        )}
-      </View>
-      <View style={styles.productInfo}>
-        <Text style={styles.productName} numberOfLines={2}>
-          {item.name}
-        </Text>
-        <Text style={styles.productPrice}>€{item.price.toFixed(2)}</Text>
-      </View>
+    <View style={styles.productCardWrapper}>
+      <ProductCard
+        id={item._id}
+        name={item.name}
+        price={item.price}
+        rating={item.rating}
+        image={item.images && item.images[0] 
+          ? { uri: item.images[0] } 
+          : require('@/assets/images/react-logo.png')}
+        isOrganic={item.ecoFriendly}
+        onPress={() => router.push(`/product-detail?id=${item._id}`)}
+      />
     </View>
   );
 
@@ -326,74 +313,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     marginBottom: 16,
   },
-  productCard: {
+  productCardWrapper: {
     width: '48%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  imageContainer: {
-    width: '100%',
-    height: 200,
-    position: 'relative',
-  },
-  productImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#F3F4F6',
-  },
-  favoriteButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  ecoLabel: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: GREEN,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  productInfo: {
-    padding: 12,
-  },
-  productName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 6,
-    lineHeight: 18,
-  },
-  productPrice: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: GREEN,
   },
   emptyContainer: {
     flex: 1,

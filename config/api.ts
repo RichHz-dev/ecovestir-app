@@ -50,8 +50,8 @@ api.interceptors.response.use(
   async (error) => {
     console.log('❌ API Error:', error.message);
     if (error.response) {
-      console.log('📡 Response status:', error.response.status);
-      console.log('📄 Response data:', error.response.data);
+      console.log('Response status:', error.response.status);
+      console.log('Response data:', error.response.data);
       
       if (error.response.status === 401) {
         // Token expirado o inválido - limpiar sesión
@@ -59,7 +59,7 @@ api.interceptors.response.use(
         await AsyncStorage.removeItem('user');
       }
     } else if (error.request) {
-      console.log('⚠️  No response received - Backend no alcanzable');
+      console.log('No response received - Backend no alcanzable');
     }
     return Promise.reject(error);
   }

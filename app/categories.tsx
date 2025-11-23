@@ -1,19 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  TextInput,
-  Image,
-  ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { CategoryCard } from '@/components/category-card';
 import { getCategories } from '@/services/api';
 import { Category } from '@/types/api';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const GREEN = '#00a63e';
 
@@ -45,46 +45,15 @@ export default function CategoriesScreen() {
     }
   };
 
-  const handleCategoryPress = (categoryId: string) => {
-    router.push(`/products?category=${categoryId}`);
-  };
-
   const renderCategoryCard = ({ item }: { item: Category }) => (
-    <View style={styles.categoryCard}>
-      <View style={styles.imageContainer}>
-        <Image
-          source={
-            item.image && item.image !== 'https://via.placeholder.com/400x400?text=Sin+Imagen'
-              ? { uri: item.image }
-              : require('@/assets/images/react-logo.png')
-          }
-          style={styles.categoryImage}
-          resizeMode="cover"
-        />
-      </View>
-      
-      <View style={styles.categoryInfo}>
-        <Text style={styles.categoryName}>{item.name}</Text>
-        <View style={styles.detailsRow}>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailValue}>{item.productsCount || 0} productos</Text>
-          </View>
-          {item.materials && (
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>•</Text>
-              <Text style={styles.detailValue} numberOfLines={1}>{item.materials}</Text>
-            </View>
-          )}
-        </View>
-        
-        <TouchableOpacity 
-          style={styles.viewButton}
-          onPress={() => handleCategoryPress(item._id)}
-        >
-          <Text style={styles.viewButtonText}>Ver Categoría</Text>
-          <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
+    <View style={styles.categoryWrapper}>
+      <CategoryCard
+        title={item.name}
+        image={item.image && item.image !== 'https://via.placeholder.com/400x400?text=Sin+Imagen'
+          ? { uri: item.image }
+          : require('@/assets/images/react-logo.png')}
+        onPress={() => router.push(`/products?categoryId=${item._id}`)}
+      />
     </View>
   );
 
@@ -97,13 +66,6 @@ export default function CategoriesScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Nuestras Categorías</Text>
         <View style={styles.placeholder} />
-      </View>
-
-      {/* Description */}
-      <View style={styles.descriptionContainer}>
-        <Text style={styles.descriptionText}>
-          Explora nuestra completa colección de ropa orgánica. Cada prenda está diseñada con materiales sostenibles y fabricada de manera consciente.
-        </Text>
       </View>
 
       {/* Search Bar */}
@@ -170,17 +132,6 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 40,
   },
-  descriptionContainer: {
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    backgroundColor: '#FFFFFF',
-  },
-  descriptionText: {
-    fontSize: 14,
-    color: '#6B7280',
-    lineHeight: 20,
-    textAlign: 'center',
-  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -209,81 +160,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
-  categoryCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  imageContainer: {
-    width: '100%',
-    height: 180,
-    backgroundColor: '#F3F4F6',
-  },
-  categoryImage: {
-    width: '100%',
-    height: '100%',
-  },
-  categoryInfo: {
-    padding: 16,
-  },
-  categoryName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  detailsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  categoryWrapper: {
     marginBottom: 16,
-    flexWrap: 'wrap',
-  },
-  detailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  detailLabel: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    marginHorizontal: 4,
-  },
-  detailValue: {
-    fontSize: 13,
-    color: '#6B7280',
-    fontWeight: '500',
-  },
-  viewButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: GREEN,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 10,
-    shadowColor: GREEN,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  viewButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
-    marginRight: 8,
   },
   emptyContainer: {
     flex: 1,

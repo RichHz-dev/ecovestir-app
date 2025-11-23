@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -15,10 +16,10 @@ interface ProductCardProps {
 
 export function ProductCard({ id, name, price, rating, image, isOrganic = true, onPress }: ProductCardProps) {
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
       {isOrganic && (
         <View style={styles.organicBadge}>
-          <Text style={styles.organicText}>Orgánico</Text>
+          <Ionicons name="leaf" size={16} color="#FFFFFF" />
         </View>
       )}
       <Image source={image} style={styles.image} resizeMode="cover" />
@@ -35,11 +36,11 @@ export function ProductCard({ id, name, price, rating, image, isOrganic = true, 
           <Text style={styles.ratingCount}>({rating})</Text>
         </View>
         <Text style={styles.price}>${price}</Text>
-        <TouchableOpacity style={styles.button}>
+        {/* <TouchableOpacity style={styles.button}>
           <Text style={styles.buttonText}>Ver Detalles</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -64,15 +65,12 @@ const styles = StyleSheet.create({
     top: 12,
     left: 12,
     backgroundColor: GREEN,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
     zIndex: 10,
-  },
-  organicText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '600',
   },
   image: {
     width: '100%',
@@ -109,16 +107,16 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     marginBottom: 10,
   },
-  button: {
-    borderWidth: 1.5,
-    borderColor: GREEN,
-    borderRadius: 20,
-    paddingVertical: 8,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: GREEN,
-    fontSize: 13,
-    fontWeight: '600',
-  },
+  // button: {
+  //   borderWidth: 1.5,
+  //   borderColor: GREEN,
+  //   borderRadius: 20,
+  //   paddingVertical: 8,
+  //   alignItems: 'center',
+  // },
+  // buttonText: {
+  //   color: GREEN,
+  //   fontSize: 13,
+  //   fontWeight: '600',
+  // },
 });
