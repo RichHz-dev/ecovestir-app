@@ -28,44 +28,44 @@ export default function ProductsScreen() {
   const [totalProducts, setTotalProducts] = useState(0);
 
   useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const data = await getCategories({ limit: 20, isActive: true });
+        setCategories(data.data);
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      }
+    };
+
     loadCategories();
   }, []);
 
   useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+        const params: any = { limit: 100 };
+        
+        if (selectedCategory) {
+          params.category = selectedCategory;
+        }
+        
+        if (searchQuery.trim()) {
+          params.q = searchQuery.trim();
+        }
+
+        const data = await getProducts(params);
+        setProducts(data.data);
+        setTotalProducts(data.meta.total);
+      } catch (error) {
+        console.error('Error loading products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadProducts();
   }, [selectedCategory, searchQuery]);
-
-  const loadCategories = async () => {
-    try {
-      const data = await getCategories({ limit: 20, isActive: true });
-      setCategories(data.data);
-    } catch (error) {
-      console.error('Error loading categories:', error);
-    }
-  };
-
-  const loadProducts = async () => {
-    try {
-      setLoading(true);
-      const params: any = { limit: 100 };
-      
-      if (selectedCategory) {
-        params.category = selectedCategory;
-      }
-      
-      if (searchQuery.trim()) {
-        params.q = searchQuery.trim();
-      }
-
-      const data = await getProducts(params);
-      setProducts(data.data);
-      setTotalProducts(data.meta.total);
-    } catch (error) {
-      console.error('Error loading products:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const renderProductCard = ({ item }: { item: Product }) => (
     <View style={styles.productCardWrapper}>

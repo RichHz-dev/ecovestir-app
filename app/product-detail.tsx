@@ -26,28 +26,28 @@ export default function ProductDetailScreen() {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
   useEffect(() => {
+    const loadProduct = async () => {
+      try {
+        setLoading(true);
+        const data = await getProducts({ limit: 100 });
+        const foundProduct = data.data.find((p) => p._id === id);
+        
+        if (foundProduct) {
+          setProduct(foundProduct);
+          // Seleccionar primera talla disponible
+          if (foundProduct.availableSizes && foundProduct.availableSizes.length > 0) {
+            setSelectedSize(foundProduct.availableSizes[0]);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading product:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadProduct();
   }, [id]);
-
-  const loadProduct = async () => {
-    try {
-      setLoading(true);
-      const data = await getProducts({ limit: 100 });
-      const foundProduct = data.data.find((p) => p._id === id);
-      
-      if (foundProduct) {
-        setProduct(foundProduct);
-        // Seleccionar primera talla disponible
-        if (foundProduct.availableSizes && foundProduct.availableSizes.length > 0) {
-          setSelectedSize(foundProduct.availableSizes[0]);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading product:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
@@ -223,40 +223,6 @@ export default function ProductDetailScreen() {
                 </View>
               </View>
             )}
-
-            {/* Impacto Ecológico */}
-            {/* <TouchableOpacity
-              style={styles.expandableHeader}
-              onPress={() => toggleSection('impact')}
-            >
-              <Text style={styles.expandableTitle}>Impacto Ecológico</Text>
-              <Ionicons
-                name={expandedSection === 'impact' ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color="#6B7280"
-              />
-            </TouchableOpacity>
-            {expandedSection === 'impact' && (
-              <View style={styles.expandableContent}>
-                <View style={styles.impactGrid}>
-                  <View style={styles.impactItem}>
-                    <Ionicons name="water-outline" size={32} color={GREEN} />
-                    <Text style={styles.impactLabel}>Ahorro de agua</Text>
-                    <Text style={styles.impactValue}>2,700L</Text>
-                  </View>
-                  <View style={styles.impactItem}>
-                    <Ionicons name="leaf-outline" size={32} color={GREEN} />
-                    <Text style={styles.impactLabel}>CO₂ reducido</Text>
-                    <Text style={styles.impactValue}>5.2 kg</Text>
-                  </View>
-                  <View style={styles.impactItem}>
-                    <Ionicons name="shield-checkmark-outline" size={32} color={GREEN} />
-                    <Text style={styles.impactLabel}>Sin pesticidas</Text>
-                    <Text style={styles.impactValue}>100%</Text>
-                  </View>
-                </View>
-              </View>
-            )} */}
 
             {/* Cuidados de la Prenda */}
             <TouchableOpacity
@@ -598,26 +564,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     lineHeight: 24,
-  },
-  impactGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  impactItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  impactLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  impactValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginTop: 4,
   },
   careItem: {
     fontSize: 14,

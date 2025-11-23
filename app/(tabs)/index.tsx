@@ -135,7 +135,10 @@ export default function HomeScreen() {
           >
             <Text style={styles.heroButtonText}>Explorar Colección</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.heroButtonOutline}>
+          <TouchableOpacity 
+            style={styles.heroButtonOutline}
+            onPress={() => router.push('/about')}
+          >
             <Text style={styles.heroButtonOutlineText}>Conoce Más</Text>
           </TouchableOpacity>
         </View>
@@ -381,8 +384,8 @@ const styles = StyleSheet.create({
   },
   heroButton: {
     backgroundColor: GREEN,
-    paddingVertical: 14,
-    paddingHorizontal: 48,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
     borderRadius: 25,
     marginBottom: 12,
     width: '100%',
@@ -396,8 +399,8 @@ const styles = StyleSheet.create({
   heroButtonOutline: {
     borderWidth: 2,
     borderColor: GREEN,
-    paddingVertical: 12,
-    paddingHorizontal: 48,
+    paddingVertical: 10,
+    paddingHorizontal: 32,
     borderRadius: 25,
     width: '100%',
     alignItems: 'center',

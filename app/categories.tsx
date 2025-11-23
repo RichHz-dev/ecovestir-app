@@ -24,26 +24,26 @@ export default function CategoriesScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setLoading(true);
+        const params: any = { limit: 50, isActive: true };
+        
+        if (searchQuery.trim()) {
+          params.q = searchQuery.trim();
+        }
+
+        const data = await getCategories(params);
+        setCategories(data.data);
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadCategories();
   }, [searchQuery]);
-
-  const loadCategories = async () => {
-    try {
-      setLoading(true);
-      const params: any = { limit: 50, isActive: true };
-      
-      if (searchQuery.trim()) {
-        params.q = searchQuery.trim();
-      }
-
-      const data = await getCategories(params);
-      setCategories(data.data);
-    } catch (error) {
-      console.error('Error loading categories:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const renderCategoryCard = ({ item }: { item: Category }) => (
     <View style={styles.categoryWrapper}>
