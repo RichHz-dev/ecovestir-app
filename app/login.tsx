@@ -67,9 +67,11 @@ export default function LoginScreen() {
       if (mode === 'login') {
         await login(email.toLowerCase().trim(), password);
         Alert.alert('Éxito', 'Sesión iniciada correctamente');
+        router.replace('/(tabs)');
       } else {
         await register(name.trim(), email.toLowerCase().trim(), password);
         Alert.alert('Éxito', 'Cuenta creada correctamente');
+        router.replace('/(tabs)');
       }
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Ocurrió un error');

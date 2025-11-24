@@ -1,17 +1,19 @@
 import { ProductCard } from '@/components/product-card';
-import { getCategories, getProducts } from '@/services/api';
+import { useCart } from '@/context/CartContext';
+import { getCategories, getProducts, isUserLoggedIn } from '@/services/api';
 import { Category, Product } from '@/types/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  FlatList,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -20,12 +22,29 @@ const GREEN = '#00a63e';
 export default function ProductsScreen() {
   const router = useRouter();
   const { categoryId } = useLocalSearchParams<{ categoryId?: string }>();
+  const { cartCount } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(categoryId || null);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [totalProducts, setTotalProducts] = useState(0);
+
+  const handleCartPress = async () => {
+    const loggedIn = await isUserLoggedIn();
+    if (!loggedIn) {
+      Alert.alert(
+        'Inicia sesión',
+        'Debes iniciar sesión para ver tu carrito',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Ir a Login', onPress: () => router.push('/login') }
+        ]
+      );
+      return;
+    }
+    router.push('/cart');
+  };
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -91,11 +110,16 @@ export default function ProductsScreen() {
           <Ionicons name="arrow-back" size={24} color="#1F2937" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Nuestra Colección</Text>
-        <TouchableOpacity style={styles.cartButton}>
+        <TouchableOpacity 
+          style={styles.cartButton}
+          onPress={handleCartPress}
+        >
           <Ionicons name="cart-outline" size={24} color="#1F2937" />
-          <View style={styles.cartBadge}>
-            <Text style={styles.cartBadgeText}>2</Text>
-          </View>
+          {cartCount > 0 && (
+            <View style={styles.cartBadge}>
+              <Text style={styles.cartBadgeText}>{cartCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 

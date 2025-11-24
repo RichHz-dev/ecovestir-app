@@ -1,5 +1,39 @@
 import { API_BASE_URL } from '@/config/api';
-import { CategoriesResponse, Category, Product, ProductsResponse } from '@/types/api';
+import { CartItem, CategoriesResponse, Category, Product, ProductsResponse } from '@/types/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Helper para obtener el token de autenticación
+async function getAuthToken(): Promise<string | null> {
+  try {
+    const token = await AsyncStorage.getItem('token');
+    return token;
+  } catch (error) {
+    console.error('Error getting auth token:', error);
+    return null;
+  }
+}
+
+// Helper para verificar si hay usuario logueado
+export async function isUserLoggedIn(): Promise<boolean> {
+  const token = await getAuthToken();
+  return token !== null;
+}
+
+// Helper para headers con auth
+async function getHeaders(includeAuth: boolean = false): Promise<HeadersInit> {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (includeAuth) {
+    const token = await getAuthToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+  
+  return headers;
+}
 
 /**
  * Obtener lista de productos con paginación y filtros
@@ -143,6 +177,205 @@ export async function checkStock(productId: string, size: string, quantity: numb
     return data;
   } catch (error) {
     console.error('Error checking stock:', error);
+    throw error;
+  }
+}
+
+// ==================== CART API ====================
+
+/**
+ * Obtener el carrito del usuario
+ */
+export async function getCart(): Promise<CartItem[]> {
+  try {
+    const headers = await getHeaders(true);
+    const response = await fetch(`${API_BASE_URL}/cart`, { headers });
+    
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data: CartItem[] = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching cart:', error);
+    throw error;
+  }
+}
+
+/**
+ * Añadir ítem al carrito
+ */
+export async function addToCart(productId: string, quantity: number = 1, size: string = ''): Promise<CartItem[]> {
+  try {
+    const headers = await getHeaders(true);
+    const response = await fetch(`${API_BASE_URL}/cart/items`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ productId, quantity, size }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `Error ${response.status}`);
+    }
+
+    const data: CartItem[] = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error adding to cart:', error);
+    throw error;
+  }
+}
+
+/**
+ * Actualizar cantidad de un ítem en el carrito
+ * Primero elimina el item y luego lo vuelve a agregar con la nueva cantidad
+ */
+export async function updateCartItemQuantity(productId: string, quantity: number, size: string = ''): Promise<CartItem[]> {
+  try {
+    // Primero eliminar el item actual
+    await removeFromCart(productId, size);
+    
+    // Luego agregarlo con la nueva cantidad
+    const data = await addToCart(productId, quantity, size);
+    return data;
+  } catch (error) {
+    console.error('Error updating cart item quantity:', error);
+    throw error;
+  }
+}
+
+/**
+ * Eliminar ítem del carrito
+ */
+export async function removeFromCart(productId: string, size: string = ''): Promise<CartItem[]> {
+  try {
+    const headers = await getHeaders(true);
+    const url = size 
+      ? `${API_BASE_URL}/cart/items/${productId}?size=${encodeURIComponent(size)}`
+      : `${API_BASE_URL}/cart/items/${productId}`;
+    
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers,
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data: CartItem[] = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error removing from cart:', error);
+    throw error;
+  }
+}
+
+/**
+ * Vaciar el carrito
+ */
+export async function clearCart(): Promise<CartItem[]> {
+  try {
+    const headers = await getHeaders(true);
+    const response = await fetch(`${API_BASE_URL}/cart`, {
+      method: 'DELETE',
+      headers,
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data: CartItem[] = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error clearing cart:', error);
+    throw error;
+  }
+}
+
+// ==================== RESERVATIONS API ====================
+
+/**
+ * Crear una reserva temporal
+ */
+export async function createReservation(
+  productId: string, 
+  size: string = '', 
+  quantity: number = 1, 
+  ttlMinutes: number = 10
+): Promise<any> {
+  try {
+    const headers = await getHeaders(true);
+    const response = await fetch(`${API_BASE_URL}/reservations`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ productId, size, quantity, ttlMinutes }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `Error ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error creating reservation:', error);
+    throw error;
+  }
+}
+
+/**
+ * Liberar reservas
+ */
+export async function releaseReservation(productId?: string, size?: string): Promise<any> {
+  try {
+    const headers = await getHeaders(true);
+    const body: any = {};
+    if (productId) body.productId = productId;
+    if (size) body.size = size;
+    
+    const response = await fetch(`${API_BASE_URL}/reservations`, {
+      method: 'DELETE',
+      headers,
+      body: JSON.stringify(body),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error releasing reservation:', error);
+    throw error;
+  }
+}
+
+/**
+ * Confirmar reservas (decrementar stock)
+ */
+export async function confirmReservations(): Promise<any> {
+  try {
+    const headers = await getHeaders(true);
+    const response = await fetch(`${API_BASE_URL}/reservations/confirm`, {
+      method: 'POST',
+      headers,
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `Error ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error confirming reservations:', error);
     throw error;
   }
 }

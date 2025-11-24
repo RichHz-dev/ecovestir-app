@@ -1,6 +1,8 @@
 import { CategoryCard } from '@/components/category-card';
 import { ProductCard } from '@/components/product-card';
-import { getCategories, getProducts } from '@/services/api';
+import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { getCategories, getProducts, isUserLoggedIn } from '@/services/api';
 import { Category, Product } from '@/types/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -8,10 +10,13 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -22,12 +27,74 @@ const CARD_MARGIN = 12;
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { user, logout } = useAuth();
+  const { cartCount } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [searching, setSearching] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
+  const handleCartPress = async () => {
+    const loggedIn = await isUserLoggedIn();
+    if (!loggedIn) {
+      Alert.alert(
+        'Inicia sesión',
+        'Debes iniciar sesión para ver tu carrito',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Ir a Login', onPress: () => router.push('/login') }
+        ]
+      );
+      return;
+    }
+    router.push('/cart');
+  };
+
+  const handleAvatarPress = () => {
+    if (user) {
+      setShowUserMenu(true);
+    } else {
+      router.push('/login');
+    }
+  };
+
+  const handleLogout = async () => {
+    setShowUserMenu(false);
+    await logout();
+    Alert.alert('Sesión cerrada', 'Has cerrado sesión exitosamente');
+  };
+
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    
+    if (query.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      setSearching(true);
+      const data = await getProducts({ q: query, limit: 20 });
+      setSearchResults(data.data);
+    } catch (error) {
+      console.error('Error searching products:', error);
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleSearchModalClose = () => {
+    setShowSearchModal(false);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
   useEffect(() => {
     loadData();
   }, []);
@@ -73,6 +140,137 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <StatusBar style="dark" />
       
+      {/* User Menu Modal */}
+      <Modal
+        visible={showUserMenu}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowUserMenu(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowUserMenu(false)}
+        >
+          <View style={styles.userMenuContainer}>
+            <View style={styles.userMenuHeader}>
+              <View style={styles.userMenuAvatar}>
+                <Text style={styles.userMenuAvatarText}>
+                  {user?.name.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <View style={styles.userMenuInfo}>
+                <Text style={styles.userMenuName}>
+                  Hola {user ? user.name.charAt(0).toUpperCase() + user.name.slice(1).toLowerCase() : ''}
+                </Text>
+                <Text style={styles.userMenuEmail}>{user?.email}</Text>
+              </View>
+            </View>
+            
+            <View style={styles.userMenuDivider} />
+            
+            <TouchableOpacity 
+              style={styles.userMenuItem}
+              onPress={handleLogout}
+            >
+              <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+              <Text style={styles.userMenuItemTextDanger}>Cerrar Sesión</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Search Modal */}
+      <Modal
+        visible={showSearchModal}
+        animationType="slide"
+        onRequestClose={handleSearchModalClose}
+      >
+        <View style={styles.searchModalContainer}>
+          {/* Search Header */}
+          <View style={styles.searchHeader}>
+            <TouchableOpacity onPress={handleSearchModalClose}>
+              <Ionicons name="arrow-back" size={24} color="#1F2937" />
+            </TouchableOpacity>
+            <View style={styles.searchInputContainer}>
+              <Ionicons name="search-outline" size={20} color="#6B7280" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Buscar productos..."
+                placeholderTextColor="#9CA3AF"
+                value={searchQuery}
+                onChangeText={handleSearch}
+                autoFocus
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => handleSearch('')}>
+                  <Ionicons name="close-circle" size={20} color="#6B7280" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {/* Search Results */}
+          <ScrollView style={styles.searchResults}>
+            {searching ? (
+              <View style={styles.searchingContainer}>
+                <ActivityIndicator size="large" color={GREEN} />
+                <Text style={styles.searchingText}>Buscando...</Text>
+              </View>
+            ) : searchQuery.length < 2 ? (
+              <View style={styles.searchEmptyContainer}>
+                <Ionicons name="search-outline" size={64} color="#D1D5DB" />
+                <Text style={styles.searchEmptyText}>Escribe al menos 2 caracteres para buscar</Text>
+              </View>
+            ) : searchResults.length === 0 ? (
+              <View style={styles.searchEmptyContainer}>
+                <Ionicons name="sad-outline" size={64} color="#D1D5DB" />
+                <Text style={styles.searchEmptyText}>No se encontraron productos</Text>
+                <Text style={styles.searchEmptySubtext}>Intenta con otros términos</Text>
+              </View>
+            ) : (
+              <View style={styles.searchResultsList}>
+                <Text style={styles.searchResultsCount}>
+                  {searchResults.length} {searchResults.length === 1 ? 'resultado' : 'resultados'}
+                </Text>
+                {searchResults.map((product) => (
+                  <TouchableOpacity
+                    key={product._id}
+                    style={styles.searchResultItem}
+                    onPress={() => {
+                      handleSearchModalClose();
+                      router.push(`/product-detail?id=${product._id}`);
+                    }}
+                  >
+                    <Image
+                      source={
+                        product.images && product.images[0]
+                          ? { uri: product.images[0] }
+                          : require('@/assets/images/react-logo.png')
+                      }
+                      style={styles.searchResultImage}
+                    />
+                    <View style={styles.searchResultInfo}>
+                      <Text style={styles.searchResultName} numberOfLines={2}>
+                        {product.name}
+                      </Text>
+                      <Text style={styles.searchResultPrice}>€{product.price.toFixed(2)}</Text>
+                      {product.ecoFriendly && (
+                        <View style={styles.searchResultBadge}>
+                          <Ionicons name="leaf-outline" size={12} color={GREEN} />
+                          <Text style={styles.searchResultBadgeText}>Orgánico</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
+      
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -84,20 +282,34 @@ export default function HomeScreen() {
           <Text style={styles.logoText}>Ecovestir</Text>
         </View>
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.iconButton}>
+          <TouchableOpacity 
+            style={styles.iconButton}
+            onPress={() => setShowSearchModal(true)}
+          >
             <Ionicons name="search-outline" size={24} color="#1F2937" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton}>
-            <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>2</Text>
-            </View>
+          <TouchableOpacity 
+            style={styles.iconButton}
+            onPress={handleCartPress}
+          >
+            {cartCount > 0 && (
+              <View style={styles.cartBadge}>
+                <Text style={styles.cartBadgeText}>{cartCount}</Text>
+              </View>
+            )}
             <Ionicons name="cart-outline" size={24} color="#1F2937" />
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.iconButton}
-            onPress={() => router.push('/login')}
+            onPress={handleAvatarPress}
           >
-            <Ionicons name="person-outline" size={24} color="#1F2937" />
+            {user ? (
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{user.name.charAt(0).toUpperCase()}</Text>
+              </View>
+            ) : (
+              <Ionicons name="person-outline" size={24} color="#1F2937" />
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -594,5 +806,200 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontSize: 14,
     paddingVertical: 20,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: GREEN,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+  },
+  userMenuContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginTop: 60,
+    marginRight: 16,
+    minWidth: 250,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  userMenuHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  userMenuAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: GREEN,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  userMenuAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  userMenuInfo: {
+    flex: 1,
+  },
+  userMenuName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  userMenuEmail: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  userMenuDivider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 16,
+  },
+  userMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  userMenuItemTextDanger: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#EF4444',
+  },
+  searchModalContainer: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  searchHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingTop: 50,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    gap: 12,
+  },
+  searchInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#1F2937',
+  },
+  searchResults: {
+    flex: 1,
+  },
+  searchingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  searchingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  searchEmptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 40,
+  },
+  searchEmptyText: {
+    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+    textAlign: 'center',
+  },
+  searchEmptySubtext: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  searchResultsList: {
+    padding: 16,
+  },
+  searchResultsCount: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginBottom: 16,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  searchResultImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+  },
+  searchResultInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  searchResultName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  searchResultPrice: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: GREEN,
+    marginBottom: 4,
+  },
+  searchResultBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  searchResultBadgeText: {
+    fontSize: 12,
+    color: GREEN,
+    fontWeight: '500',
   },
 });

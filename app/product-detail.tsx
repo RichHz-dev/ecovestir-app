@@ -1,16 +1,18 @@
-import { getProducts } from '@/services/api';
+import { useCart } from '@/context/CartContext';
+import { getProducts, isUserLoggedIn } from '@/services/api';
 import { Product } from '@/types/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -19,6 +21,7 @@ const GREEN = '#00a63e';
 export default function ProductDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { addItem } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState<string>('');
@@ -59,6 +62,46 @@ export default function ProductDetailScreen() {
     return sizeStock?.stock || 0;
   };
 
+  const handleAddToCart = async () => {
+    // Verificar si el usuario está logueado
+    const loggedIn = await isUserLoggedIn();
+    
+    if (!loggedIn) {
+      Alert.alert(
+        'Inicia sesión',
+        'Debes iniciar sesión para agregar productos al carrito',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { 
+            text: 'Ir a Login', 
+            onPress: () => router.push('/login')
+          }
+        ]
+      );
+      return;
+    }
+
+    // Verificar que se haya seleccionado una talla
+    if (!selectedSize) {
+      Alert.alert('Selecciona una talla', 'Por favor selecciona una talla antes de agregar al carrito');
+      return;
+    }
+
+    // Verificar stock disponible
+    const stockAvailable = getStockForSize(selectedSize);
+    if (stockAvailable <= 0) {
+      Alert.alert('Sin stock', 'Esta talla no está disponible en este momento');
+      return;
+    }
+
+    try {
+      await addItem(id!, 1, selectedSize);
+      router.push('/cart');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'No se pudo agregar el producto al carrito');
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -85,14 +128,14 @@ export default function ProductDetailScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
-      {/* <View style={styles.header}>
+      <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
           <Ionicons name="arrow-back" size={24} color="#1F2937" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.headerButton}>
+        {/* <TouchableOpacity style={styles.headerButton}>
           <Ionicons name="heart-outline" size={24} color="#1F2937" />
-        </TouchableOpacity>
-      </View> */}
+        </TouchableOpacity> */}
+      </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Image Gallery */}
@@ -275,7 +318,10 @@ export default function ProductDetailScreen() {
 
       {/* Bottom Actions */}
       <View style={styles.bottomContainer}>
-        <TouchableOpacity style={styles.addToCartButton}>
+        <TouchableOpacity 
+          style={styles.addToCartButton}
+          onPress={handleAddToCart}
+        >
           <Ionicons name="cart-outline" size={20} color="#FFFFFF" />
           <Text style={styles.addToCartText}>Añadir a la cesta</Text>
         </TouchableOpacity>

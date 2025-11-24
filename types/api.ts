@@ -57,3 +57,30 @@ export interface CategoriesResponse {
     totalPages: number;
   };
 }
+
+// Cart types
+export interface CartItem {
+  productId: Product | string;
+  quantity: number;
+  size: string;
+  _id?: string;
+}
+
+export interface User {
+  _id: string;
+  name: string;
+  email: string;
+  role: 'customer' | 'admin';
+  cart: CartItem[];
+  createdAt?: string;
+}
+
+export interface Reservation {
+  _id: string;
+  user: string;
+  productId: string;
+  size: string;
+  quantity: number;
+  expiresAt: string;
+  createdAt: string;
+}
