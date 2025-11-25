@@ -2,12 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -19,13 +19,13 @@ export default function AboutScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
-      {/* <View style={styles.header}>
+      <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Sobre Nosotros Ecovestir</Text>
-        <View style={styles.placeholder} />
-      </View> */}
+        {/* <Text style={styles.headerTitle}>Sobre Nosotros</Text>
+        <View style={styles.placeholder} /> */}
+      </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Hero Section */}
@@ -200,7 +200,10 @@ export default function AboutScreen() {
             <Text style={styles.communityButtonText}>Explorar Colección</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.contactButton}>
+          <TouchableOpacity 
+            style={styles.contactButton}
+            onPress={() => router.push('/contact')}
+          >
             <Ionicons name="mail-outline" size={20} color={GREEN} />
             <Text style={styles.contactButtonText}>Contactar</Text>
           </TouchableOpacity>
@@ -230,18 +233,9 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
   },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  placeholder: {
-    width: 40,
-  },
   heroSection: {
     backgroundColor: '#1F2937',
     paddingHorizontal: 24,
-    paddingTop: 40,
     paddingBottom: 48,
     alignItems: 'center',
     borderBottomLeftRadius: 24,
