@@ -171,6 +171,17 @@ export default function HomeScreen() {
             
             <TouchableOpacity 
               style={styles.userMenuItem}
+              onPress={() => {
+                setShowUserMenu(false);
+                router.push('/contact');
+              }}
+            >
+              <Ionicons name="mail-outline" size={20} color={GREEN} />
+              <Text style={styles.userMenuItemTextGreen}>Contacto</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.userMenuItem}
               onPress={handleLogout}
             >
               <Ionicons name="log-out-outline" size={20} color="#EF4444" />
@@ -880,6 +891,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     gap: 12,
+  },
+  userMenuItemText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  userMenuItemTextGreen: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: GREEN,
   },
   userMenuItemTextDanger: {
     fontSize: 15,

@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '@/config/api';
-import { CartItem, CategoriesResponse, Category, Product, ProductsResponse } from '@/types/api';
+import { CartItem, CategoriesResponse, Category, ContactMessage, ContactMessageResponse, Product, ProductsResponse } from '@/types/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Helper para obtener el token de autenticación
@@ -376,6 +376,33 @@ export async function confirmReservations(): Promise<any> {
     return data;
   } catch (error) {
     console.error('Error confirming reservations:', error);
+    throw error;
+  }
+}
+
+// ==================== CONTACT API ====================
+
+/**
+ * Enviar mensaje de contacto
+ */
+export async function sendContactMessage(contactData: ContactMessage): Promise<ContactMessageResponse> {
+  try {
+    const headers = await getHeaders(false); // No requiere autenticación
+    const response = await fetch(`${API_BASE_URL}/contact`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(contactData),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `Error ${response.status}`);
+    }
+
+    const data: ContactMessageResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error sending contact message:', error);
     throw error;
   }
 }

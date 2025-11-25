@@ -84,3 +84,27 @@ export interface Reservation {
   expiresAt: string;
   createdAt: string;
 }
+
+export interface ContactMessage {
+  name: string;
+  email: string;
+  phone: string;
+  reason: 'Informacion del producto' | 'Consulta sobre pedido' | 'Devolucion/Cambio' | 'Sostenibilidad' | 'Ventas por mayor' | 'Prensa/Media' | 'Otro';
+  subject: string;
+  message: string;
+}
+
+export interface ContactMessageResponse {
+  success: boolean;
+  data: {
+    _id: string;
+    name: string;
+    email: string;
+    phone: string;
+    reason: string;
+    subject: string;
+    message: string;
+    isRead: boolean;
+    createdAt: string;
+  };
+}
