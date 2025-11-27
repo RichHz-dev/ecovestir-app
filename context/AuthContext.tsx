@@ -28,7 +28,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Cargar usuario al iniciar la app
   useEffect(() => {
     loadUser();
   }, []);

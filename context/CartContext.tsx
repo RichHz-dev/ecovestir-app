@@ -1,5 +1,5 @@
+import { useAuth } from '@/context/AuthContext';
 import * as api from '@/services/api';
-import { useAuth } from '@/contexts/AuthContext';
 import { CartItem } from '@/types/api';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 

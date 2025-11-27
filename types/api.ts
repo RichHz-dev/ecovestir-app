@@ -108,3 +108,31 @@ export interface ContactMessageResponse {
     createdAt: string;
   };
 }
+
+export interface Review {
+  _id: string;
+  author: string;
+  email?: string;
+  title: string;
+  content: string;
+  rating: number;
+  product?: string;
+  productName?: string;
+  verified?: boolean;
+  status?: 'pending' | 'approved' | 'rejected';
+  createdAt?: string;
+}
+
+export interface ReviewsResponse {
+  success: boolean;
+  data: Review[];
+  stats: {
+    averageRating: number;
+    totalReviews: number;
+  };
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalReviews?: number;
+  };
+}

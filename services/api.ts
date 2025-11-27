@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '@/config/api';
-import { CartItem, CategoriesResponse, Category, ContactMessage, ContactMessageResponse, Product, ProductsResponse } from '@/types/api';
+import { CartItem, CategoriesResponse, Category, ContactMessage, ContactMessageResponse, Product, ProductsResponse, ReviewsResponse } from '@/types/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Helper para obtener el token de autenticación
@@ -403,6 +403,57 @@ export async function sendContactMessage(contactData: ContactMessage): Promise<C
     return data;
   } catch (error) {
     console.error('Error sending contact message:', error);
+    throw error;
+  }
+}
+
+// ==================== REVIEWS API ====================
+
+/**
+ * Obtener reseñas públicas (aprobadas) y estadísticas
+ */
+export async function getReviews(params?: { page?: number; limit?: number; rating?: number; sortBy?: string; }): Promise<ReviewsResponse> {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', String(params.page));
+    if (params?.limit) queryParams.append('limit', String(params.limit));
+    if (params?.rating) queryParams.append('rating', String(params.rating));
+    if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+
+    const url = `${API_BASE_URL}/reviews${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await fetch(url, { headers: await getHeaders(false) });
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+    const data: ReviewsResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
+    throw error;
+  }
+}
+
+/**
+ * Crear nueva reseña (requiere autenticación)
+ */
+export async function createReview(body: { title: string; content: string; rating: number; productId?: string }): Promise<any> {
+  try {
+    const headers = await getHeaders(true);
+    const response = await fetch(`${API_BASE_URL}/reviews`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => null);
+      throw new Error(error?.message || `Error ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error creating review:', error);
     throw error;
   }
 }

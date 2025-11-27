@@ -1,7 +1,7 @@
 import { CategoryCard } from '@/components/category-card';
 import { ProductCard } from '@/components/product-card';
+import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { getCategories, getProducts, isUserLoggedIn } from '@/services/api';
 import { Category, Product } from '@/types/api';
 import { Ionicons } from '@expo/vector-icons';
@@ -178,6 +178,17 @@ export default function HomeScreen() {
             >
               <Ionicons name="mail-outline" size={20} color={GREEN} />
               <Text style={styles.userMenuItemTextGreen}>Contacto</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.userMenuItem}
+              onPress={() => {
+                setShowUserMenu(false);
+                router.push('/reviews');
+              }}
+            >
+              <Ionicons name="star-outline" size={20} color="#FBBF24" />
+              <Text style={styles.userMenuItemTextYellow}>Reseñas</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -901,6 +912,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: GREEN,
+  },
+  userMenuItemTextYellow: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FBBF24',
   },
   userMenuItemTextDanger: {
     fontSize: 15,
