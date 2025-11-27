@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   AppState,
   FlatList,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const GREEN = '#00a63e';
 

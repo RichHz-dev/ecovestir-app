@@ -457,3 +457,49 @@ export async function createReview(body: { title: string; content: string; ratin
     throw error;
   }
 }
+
+// ==================== ORDERS API ====================
+
+/**
+ * Crear orden (requiere autenticación)
+ * body should include `paymentInfo` and any other order metadata
+ */
+export async function createOrder(body: any): Promise<any> {
+  try {
+    const headers = await getHeaders(true);
+    const response = await fetch(`${API_BASE_URL}/orders`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => null);
+      throw new Error(error?.message || `Error ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error creating order:', error);
+    throw error;
+  }
+}
+
+/**
+ * Listar órdenes del usuario autenticado
+ */
+export async function listOrders(): Promise<any> {
+  try {
+    const headers = await getHeaders(true);
+    const response = await fetch(`${API_BASE_URL}/orders`, { headers });
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error listing orders:', error);
+    throw error;
+  }
+}
