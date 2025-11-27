@@ -30,6 +30,7 @@ export default function RootLayout() {
             <Stack.Screen name="reviews" options={{ headerStyle: { backgroundColor: '#FFFFFF' }, headerTitle: '', headerShadowVisible: false, headerTintColor: '#111827' }} />
             <Stack.Screen name="checkout" options={{ headerShown: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+            <Stack.Screen name="checkout/payment" options={{ headerShown: false }} />
           </Stack>
           <StatusBar style="auto" />
         </ThemeProvider>
