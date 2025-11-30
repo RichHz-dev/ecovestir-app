@@ -24,10 +24,6 @@ const WHITE = '#fff';
 const GRAY = '#9CA3AF';
 const DARK_GRAY = '#374151';
 
-export const options = {
-	headerShown: false,
-};
-
 export default function CheckoutScreen() {
 	const router = useRouter();
 	// auth is handled on the payment/confirmation step

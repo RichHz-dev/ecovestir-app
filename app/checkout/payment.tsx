@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import StepIndicator from '../../components/step-indicator';
-import { clearCheckoutPayload, getCheckoutPayload, setConfirmationPayload } from '../lib/checkoutStore';
+import { clearCheckoutPayload, getCheckoutPayload } from '../lib/checkoutStore';
 
 const GREEN = '#00a63e';
 const WHITE = '#fff';
@@ -81,18 +81,11 @@ export default function PaymentScreen() {
         total: parsed.total ?? 0,
       };
 
-      const resp = await api.createOrder(body);
-      // prepare confirmation payload (use backend response if available)
-      const confirmation = {
-        order: resp || null,
-        items,
-        totals: { total: parsed.total ?? 0 },
-        shippingData: parsed.formData,
-      };
-      setConfirmationPayload(confirmation);
+      await api.createOrder(body);
       await clearCartItems();
+      clearCheckoutPayload();
       Alert.alert('Orden creada', 'Tu pedido se creó correctamente.');
-      router.replace('/checkout/confirmation');
+      router.replace('/');
     } catch (err: any) {
       console.error('Payment confirm error', err);
       Alert.alert('Error', err?.message || 'Error al crear la orden');

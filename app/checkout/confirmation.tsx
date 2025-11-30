@@ -1,9 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import StepIndicator from '../../components/step-indicator';
-import { getConfirmationPayload, clearConfirmationPayload } from '../lib/checkoutStore';
+import { clearConfirmationPayload, getConfirmationPayload } from '../lib/checkoutStore';
 
 const GREEN = '#00a63e';
 const WHITE = '#fff';
