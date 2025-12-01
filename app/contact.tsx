@@ -4,14 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Linking,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -114,12 +114,23 @@ export default function ContactScreen() {
   };
 
   const handleCall = () => {
-    Linking.openURL('tel:+5116124567');
+    // Open WhatsApp to the configured number. Use international format (country code +51 for Peru).
+    const number = '51982314461'; // +51 982314461
+    const appUrl = `whatsapp://send?phone=${number}`;
+    const webUrl = `https://wa.me/${number}`;
+
+    Linking.canOpenURL(appUrl)
+      .then((supported) => {
+        if (supported) return Linking.openURL(appUrl);
+        return Linking.openURL(webUrl);
+      })
+      .catch((err) => {
+        console.error('Error opening WhatsApp:', err);
+        showGlobalError({ title: 'Error', message: 'No se pudo abrir WhatsApp en este dispositivo', primaryText: 'Entendido' });
+      });
   };
 
-  const handleEmail = () => {
-    Linking.openURL('mailto:hola@ecovestir.com');
-  };
+  
 
   const handleChat = () => {
     showGlobalError({ title: 'Chat en Vivo', message: 'Función de chat próximamente disponible', primaryText: 'Entendido' });
@@ -343,11 +354,6 @@ export default function ContactScreen() {
           <TouchableOpacity style={styles.supportButton} onPress={handleCall}>
             <Ionicons name="call" size={20} color="#FFFFFF" />
             <Text style={styles.supportButtonText}>Llamar Ahora</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.supportButtonOutline} onPress={handleEmail}>
-            <Ionicons name="mail" size={20} color={GREEN} />
-            <Text style={styles.supportButtonOutlineText}>Email Soporte</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.supportButtonOutline} onPress={handleChat}>
