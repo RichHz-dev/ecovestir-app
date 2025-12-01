@@ -56,16 +56,37 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const updateItemQuantity = async (productId: string, quantity: number, size: string) => {
     try {
-      setLoading(true);
+      // Actualización optimista: actualizar UI primero manteniendo el orden
+      const updatedCart = cart.map(item => {
+        const itemId = typeof item.productId === 'object' ? item.productId._id : item.productId;
+        if (itemId === productId && item.size === size) {
+          return { ...item, quantity };
+        }
+        return item;
+      });
+      setCart(updatedCart);
+
+      // Luego actualizar en el backend
       setError(null);
       const data = await api.updateCartItemQuantity(productId, quantity, size);
-      setCart(data);
+      
+      // Mantener el orden original al actualizar con datos del backend
+      const orderedData = updatedCart.map(localItem => {
+        const itemId = typeof localItem.productId === 'object' ? localItem.productId._id : localItem.productId;
+        const backendItem = data.find((bItem: CartItem) => {
+          const bItemId = typeof bItem.productId === 'object' ? bItem.productId._id : bItem.productId;
+          return bItemId === itemId && bItem.size === localItem.size;
+        });
+        return backendItem || localItem;
+      });
+      
+      setCart(orderedData);
     } catch (err: any) {
       console.error('Error updating quantity:', err);
       setError(err.message || 'Error al actualizar cantidad');
+      // Revertir en caso de error
+      await refreshCart();
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 

@@ -1,17 +1,18 @@
 import { showGlobalError } from '@/components/error-modal';
 import { useCart } from '@/context/CartContext';
+import * as api from '@/services/api';
 import { CartItem, Product } from '@/types/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -20,17 +21,86 @@ const GREEN = '#00a63e';
 export default function CartScreen() {
   const router = useRouter();
   const { cart, loading, cartCount, updateItemQuantity, removeItem, clearCartItems } = useCart();
+  const [validatingStock, setValidatingStock] = useState(false);
+  const stockCheckTimeoutRef = useRef<any>(null);
+  const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
 
-  const handleUpdateQuantity = async (productId: string, size: string, newQuantity: number) => {
+  const handleUpdateQuantity = async (productId: string, size: string, newQuantity: number, currentItem: CartItem) => {
+    const itemKey = `${productId}-${size}`;
+    
+    // Evitar múltiples actualizaciones simultáneas del mismo item
+    if (updatingItems.has(itemKey)) {
+      return;
+    }
+
     if (newQuantity < 1) {
       handleRemoveItem(productId, size);
       return;
     }
 
+    // Marcar item como en actualización
+    setUpdatingItems(prev => new Set(prev).add(itemKey));
+
+    // Limpiar timeout anterior
+    if (stockCheckTimeoutRef.current) {
+      clearTimeout(stockCheckTimeoutRef.current);
+    }
+
+    // Actualizar cantidad inmediatamente (optimistic update)
     try {
       await updateItemQuantity(productId, newQuantity, size);
-    } catch {
-      showGlobalError({ title: 'Error', message: 'No se pudo actualizar la cantidad', primaryText: 'Entendido' });
+      
+      // Liberar inmediatamente después de la actualización optimista
+      setTimeout(() => {
+        setUpdatingItems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(itemKey);
+          return newSet;
+        });
+      }, 300);
+      
+      // Validar stock después de un pequeño delay
+      stockCheckTimeoutRef.current = setTimeout(async () => {
+        try {
+          const product = await api.getProduct(productId);
+          let availableStock = 0;
+          
+          if (product.sizeStock && product.sizeStock.length > 0) {
+            const sizeEntry = product.sizeStock.find(s => s.size === size);
+            availableStock = sizeEntry?.stock || 0;
+          } else {
+            availableStock = product.stock || 0;
+          }
+          
+          if (newQuantity > availableStock) {
+            showGlobalError({ 
+              title: 'Stock insuficiente', 
+              message: `Solo hay ${availableStock} unidades disponibles.`,
+              primaryText: 'Entendido',
+              onPrimary: async () => {
+                if (availableStock > 0) {
+                  await updateItemQuantity(productId, availableStock, size);
+                } else {
+                  await removeItem(productId, size);
+                }
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Error validating stock:', error);
+        }
+      }, 800);
+    } catch (err: any) {
+      setUpdatingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(itemKey);
+        return newSet;
+      });
+      showGlobalError({ 
+        title: 'Error', 
+        message: err?.message || 'No se pudo actualizar la cantidad', 
+        primaryText: 'Entendido' 
+      });
     }
   };
 
@@ -44,6 +114,68 @@ export default function CartScreen() {
     showGlobalError({ title: 'Vaciar carrito', message: '¿Estás seguro de vaciar todo el carrito?', secondaryText: 'Cancelar', primaryText: 'Vaciar', onPrimary: async () => {
       try { await clearCartItems(); } catch { showGlobalError({ title: 'Error', message: 'No se pudo vaciar el carrito', primaryText: 'Entendido' }); }
     }});
+  };
+
+  const handleProceedToCheckout = async () => {
+    setValidatingStock(true);
+    try {
+      // Validar stock de cada producto en el carrito
+      for (const item of cart) {
+        const prodId = typeof item.productId === 'object' ? item.productId._id : item.productId;
+        
+        // Obtener producto completo con stock actualizado
+        const product = await api.getProduct(prodId);
+        
+        let availableStock = 0;
+        
+        // Validar stock según si tiene tallas o no
+        if (product.sizeStock && product.sizeStock.length > 0) {
+          const sizeEntry = product.sizeStock.find(s => s.size === item.size);
+          availableStock = sizeEntry?.stock || 0;
+        } else {
+          availableStock = product.stock || 0;
+        }
+        
+        if (item.quantity > availableStock) {
+          setValidatingStock(false);
+          
+          showGlobalError({
+            title: 'Stock insuficiente',
+            message: `El producto "${product.name}"${item.size ? ` (talla ${item.size})` : ''} solo tiene ${availableStock} unidades disponibles.`,
+            primaryText: 'Entendido',
+            onPrimary: async () => {
+              // Actualizar a la cantidad máxima disponible
+              if (availableStock > 0) {
+                try {
+                  await updateItemQuantity(prodId, availableStock, item.size);
+                } catch (error) {
+                  console.error('Error updating to max stock:', error);
+                }
+              } else {
+                // Si no hay stock, eliminar del carrito
+                try {
+                  await removeItem(prodId, item.size);
+                } catch (error) {
+                  console.error('Error removing item:', error);
+                }
+              }
+            }
+          });
+          return;
+        }
+      }
+      
+      // Si todo está bien, proceder al checkout
+      setValidatingStock(false);
+      router.push('/checkout');
+    } catch (error: any) {
+      setValidatingStock(false);
+      showGlobalError({
+        title: 'Error',
+        message: error?.message || 'No se pudo validar el stock. Intenta nuevamente.',
+        primaryText: 'Entendido'
+      });
+    }
   };
 
   const calculateTotal = () => {
@@ -60,6 +192,9 @@ export default function CartScreen() {
     const product = typeof item.productId === 'object' ? item.productId as Product : null;
     
     if (!product) return null;
+
+    const itemKey = `${product._id}-${item.size}`;
+    const isUpdating = updatingItems.has(itemKey);
 
     return (
       <View style={styles.cartItem}>
@@ -86,19 +221,21 @@ export default function CartScreen() {
           {/* Quantity Controls */}
           <View style={styles.quantityControls}>
             <TouchableOpacity
-              style={styles.quantityButton}
-              onPress={() => handleUpdateQuantity(product._id, item.size, item.quantity - 1)}
+              style={[styles.quantityButton, isUpdating && styles.quantityButtonDisabled]}
+              onPress={() => handleUpdateQuantity(product._id, item.size, item.quantity - 1, item)}
+              disabled={isUpdating}
             >
-              <Ionicons name="remove" size={16} color="#1F2937" />
+              <Ionicons name="remove" size={16} color={isUpdating ? "#9CA3AF" : "#1F2937"} />
             </TouchableOpacity>
             
             <Text style={styles.quantityText}>x {item.quantity}</Text>
             
             <TouchableOpacity
-              style={styles.quantityButton}
-              onPress={() => handleUpdateQuantity(product._id, item.size, item.quantity + 1)}
+              style={[styles.quantityButton, isUpdating && styles.quantityButtonDisabled]}
+              onPress={() => handleUpdateQuantity(product._id, item.size, item.quantity + 1, item)}
+              disabled={isUpdating}
             >
-              <Ionicons name="add" size={16} color="#1F2937" />
+              <Ionicons name="add" size={16} color={isUpdating ? "#9CA3AF" : "#1F2937"} />
             </TouchableOpacity>
           </View>
           
@@ -178,13 +315,26 @@ export default function CartScreen() {
             </View>
             
             <TouchableOpacity
-              style={styles.checkoutButton}
-              onPress={() => {
-                router.push('/checkout');
-              }}
+              style={styles.continueShoppingButton}
+              onPress={() => router.push('/products')}
             >
-              <Ionicons name="card-outline" size={20} color="#FFFFFF" />
-              <Text style={styles.checkoutButtonText}>Proceder al Pago</Text>
+              <Ionicons name="arrow-back-outline" size={20} color={GREEN} />
+              <Text style={styles.continueShoppingText}>Seguir Comprando</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.checkoutButton}
+              onPress={handleProceedToCheckout}
+              disabled={validatingStock}
+            >
+              {validatingStock ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Ionicons name="card-outline" size={20} color="#FFFFFF" />
+                  <Text style={styles.checkoutButtonText}>Proceder al Pago</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
         </>
@@ -334,6 +484,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
+  quantityButtonDisabled: {
+    opacity: 0.5,
+  },
   quantityText: {
     fontSize: 15,
     fontWeight: '600',
@@ -370,6 +523,23 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
     color: GREEN,
+  },
+  continueShoppingButton: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 14,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: GREEN,
+    marginBottom: 12,
+  },
+  continueShoppingText: {
+    color: GREEN,
+    fontSize: 16,
+    fontWeight: '700',
+    marginLeft: 8,
   },
   checkoutButton: {
     flexDirection: 'row',

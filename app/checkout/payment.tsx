@@ -53,43 +53,44 @@ export default function PaymentScreen() {
 
     setLoading(true);
     try {
-      const items = cart.map((it: any) => {
-        const prod = typeof it.productId === 'object' ? it.productId : { _id: it.productId };
-        return {
-          productId: prod._id,
-          name: prod.name || '',
-          price: prod.price || 0,
-          quantity: it.quantity,
-          size: it.size || '',
-        };
-      });
-
+      // El backend toma los items directamente del carrito del usuario (cart en User model)
+      // Solo enviamos paymentInfo con shippingData validado
       const body = {
         paymentInfo: {
           shippingData: {
-            firstName: parsed.formData.name,
-            lastName: parsed.formData.lastName,
-            email: parsed.formData.email,
-            phone: parsed.formData.phone,
-            address: parsed.formData.address,
-            city: parsed.formData.city,
-            state: parsed.formData.district,
-            zipCode: parsed.formData.postalCode,
+            firstName: parsed.formData.name || '',
+            lastName: parsed.formData.lastName || '',
+            email: parsed.formData.email || '',
+            phone: parsed.formData.phone || '',
+            address: parsed.formData.address || '',
+            city: parsed.formData.city || '',
+            state: parsed.formData.district || '',
+            zipCode: parsed.formData.postalCode || '',
           },
-          shippingMethod: parsed.selectedShipping,
+          shippingMethod: parsed.selectedShipping || 'standard',
         },
-        items,
-        total: parsed.total ?? 0,
       };
 
+      // createOrder hace transacción: valida stock, crea orden, decrementa stock, limpia carrito
       await api.createOrder(body);
+      
+      // Refrescar estado del carrito local (ya fue limpiado en el backend)
       await clearCartItems();
       clearCheckoutPayload();
-      showGlobalError({ title: 'Orden creada', message: 'Tu pedido se creó correctamente.', primaryText: 'Continuar', onPrimary: () => router.replace('/') });
-      // router.replace will be executed after user taps primary button
+      
+      showGlobalError({ 
+        title: 'Orden creada', 
+        message: 'Tu pedido se creó correctamente.', 
+        primaryText: 'Continuar', 
+        onPrimary: () => router.replace('/') 
+      });
     } catch (err: any) {
       console.error('Payment confirm error', err);
-      showGlobalError({ title: 'Error', message: err?.message || 'Error al crear la orden', primaryText: 'Entendido' });
+      showGlobalError({ 
+        title: 'Error', 
+        message: err?.message || 'Error al crear la orden', 
+        primaryText: 'Entendido' 
+      });
     } finally {
       setLoading(false);
     }
