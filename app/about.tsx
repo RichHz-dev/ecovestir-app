@@ -67,7 +67,7 @@ export default function AboutScreen() {
           {/* Team Member 1 */}
           <View style={styles.teamMember}>
             <Image
-              source={require('@/assets/images/react-logo.png')}
+              source={require('@/assets/avatar1.png')}
               style={styles.teamImage}
             />
             <View style={styles.teamInfo}>
@@ -82,7 +82,7 @@ export default function AboutScreen() {
           {/* Team Member 2 */}
           <View style={styles.teamMember}>
             <Image
-              source={require('@/assets/images/react-logo.png')}
+              source={require('@/assets/avatar2.png')}
               style={styles.teamImage}
             />
             <View style={styles.teamInfo}>
@@ -94,20 +94,6 @@ export default function AboutScreen() {
             </View>
           </View>
 
-          {/* Team Member 3 */}
-          {/* <View style={styles.teamMember}>
-            <Image
-              source={require('@/assets/images/react-logo.png')}
-              style={styles.teamImage}
-            />
-            <View style={styles.teamInfo}>
-              <Text style={styles.teamName}>Andrea Peña</Text>
-              <Text style={styles.teamRole}>Directora de Sostenibilidad</Text>
-              <Text style={styles.teamDescription}>
-                Experta en certificaciones orgánicas y cadena de suministro responsable.
-              </Text>
-            </View>
-          </View> */}
         </View>
 
         {/* Values Section */}

@@ -1,13 +1,13 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, View } from 'react-native';
 import 'react-native-reanimated';
-import { View, StyleSheet } from 'react-native';
 
+import BottomMenu from '@/components/bottom-menu';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import BottomMenu from '@/components/bottom-menu';
 
 export const unstable_settings = {
   initialRouteName: '(tabs)',

@@ -9,7 +9,10 @@ import {
     ActivityIndicator,
     Alert,
     FlatList,
+    Modal,
+    ScrollView,
     StyleSheet,
+    Switch,
     Text,
     TextInput,
     TouchableOpacity,
@@ -27,6 +30,9 @@ export default function ProductsScreen() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(categoryId || null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [materialsList, setMaterialsList] = useState<string[]>([]);
+  const [filters, setFilters] = useState({ minPrice: 0, maxPrice: 200, materials: [] as string[], sizes: [] as string[], ecoOnly: false as boolean });
   const [loading, setLoading] = useState(true);
   const [totalProducts, setTotalProducts] = useState(0);
 
@@ -59,23 +65,61 @@ export default function ProductsScreen() {
     loadCategories();
   }, []);
 
+  // Load materials list from backend (fetch more products) once
+  useEffect(() => {
+    let mounted = true;
+    const loadMaterials = async () => {
+      try {
+        const res = await getProducts({ limit: 1000 });
+        const data = res.data || [];
+        const mset = new Map<string, string>();
+        (data || []).forEach((p: any) => {
+          const raw = p.material || p.materials || p.materialo || '';
+          if (!raw) return;
+          const key = String(raw).toLowerCase().trim();
+          if (!mset.has(key)) mset.set(key, String(raw).trim());
+        });
+        if (mounted) setMaterialsList(Array.from(mset.values()));
+      } catch (err) {
+        console.error('Error loading materials for filters', err);
+      }
+    };
+    loadMaterials();
+    return () => { mounted = false };
+  }, []);
+
   useEffect(() => {
     const loadProducts = async () => {
       try {
         setLoading(true);
         const params: any = { limit: 100 };
-        
-        if (selectedCategory) {
-          params.category = selectedCategory;
-        }
-        
-        if (searchQuery.trim()) {
-          params.q = searchQuery.trim();
-        }
+        if (selectedCategory) params.category = selectedCategory;
+        if (searchQuery.trim()) params.q = searchQuery.trim();
 
         const data = await getProducts(params);
-        setProducts(data.data);
-        setTotalProducts(data.meta.total);
+        let list = data.data || [];
+
+        // Apply client-side filters: price, materials, sizes, ecoOnly
+        list = list.filter((p: any) => {
+          if (filters.ecoOnly && !p.ecoFriendly) return false;
+          if (filters.materials && filters.materials.length > 0) {
+            const raw = (p.material || p.materials || '').toString().toLowerCase();
+            const ok = filters.materials.some((m: string) => raw.includes(m.toLowerCase()));
+            if (!ok) return false;
+          }
+          if (filters.sizes && filters.sizes.length > 0) {
+            const available = p.availableSizes || [];
+            const ok = filters.sizes.some((s: string) => available.includes(s));
+            if (!ok) return false;
+          }
+          if (typeof p.price === 'number') {
+            if (p.price < filters.minPrice || p.price > filters.maxPrice) return false;
+          }
+          return true;
+        });
+
+        setProducts(list);
+        setTotalProducts(list.length);
       } catch (error) {
         console.error('Error loading products:', error);
       } finally {
@@ -84,7 +128,7 @@ export default function ProductsScreen() {
     };
 
     loadProducts();
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory, searchQuery, filters]);
 
   const renderProductCard = ({ item }: { item: Product }) => (
     <View style={styles.productCardWrapper}>
@@ -137,10 +181,104 @@ export default function ProductsScreen() {
 
       {/* Filter Buttons */}
       <View style={styles.filtersContainer}>
-        <TouchableOpacity style={styles.filterButton}>
+        <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilters(true)}>
           <Ionicons name="options-outline" size={18} color="#FFFFFF" />
           <Text style={styles.filterButtonText}>Filtrar</Text>
         </TouchableOpacity>
+
+        {/* Filters Modal */}
+        <Modal visible={showFilters} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Filtros</Text>
+                <TouchableOpacity onPress={() => setShowFilters(false)}>
+                  <Ionicons name="close" size={22} color="#374151" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView>
+                <View style={styles.modalSection}>
+                  <Text style={styles.modalLabel}>Categorías</Text>
+                  <View style={styles.chipsContainer}>
+                    {categories.map((c) => (
+                      <TouchableOpacity
+                        key={c._id}
+                        style={[styles.categoryChip, selectedCategory === c._id && styles.categoryChipActive]}
+                        onPress={() => setSelectedCategory(selectedCategory === c._id ? null : c._id)}
+                      >
+                        <Text style={[styles.categoryChipText, selectedCategory === c._id && styles.categoryChipTextActive]}>{c.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                <View style={styles.modalSection}>
+                  <Text style={styles.modalLabel}>Rango de Precio</Text>
+                  <View style={styles.priceRow}>
+                    <TextInput style={styles.priceInput} keyboardType="numeric" value={String(filters.minPrice)} onChangeText={(v) => setFilters({ ...filters, minPrice: Number(v) || 0 })} />
+                    <Text style={styles.priceSeparator}>a</Text>
+                    <TextInput style={styles.priceInput} keyboardType="numeric" value={String(filters.maxPrice)} onChangeText={(v) => setFilters({ ...filters, maxPrice: Number(v) || 200 })} />
+                  </View>
+                </View>
+
+                <View style={styles.modalSection}>
+                  <Text style={styles.modalLabel}>Materiales</Text>
+                  <View style={styles.chipsContainer}>
+                    {materialsList.length === 0 ? (
+                      <Text style={{ color: '#6B7280' }}>Cargando...</Text>
+                    ) : (
+                      materialsList.map((m) => {
+                        const selected = filters.materials.includes(m);
+                        return (
+                          <TouchableOpacity key={m} style={[styles.materialBtn, selected && styles.materialBtnActive]} onPress={() => {
+                            const next = selected ? filters.materials.filter(x => x !== m) : [...filters.materials, m];
+                            setFilters({ ...filters, materials: next });
+                          }}>
+                            <Text style={[{ fontSize: 13 }, selected ? { color: '#fff' } : { color: '#374151' }]}>{m}</Text>
+                          </TouchableOpacity>
+                        );
+                      })
+                    )}
+                  </View>
+                </View>
+
+                <View style={styles.modalSection}>
+                  <Text style={styles.modalLabel}>Tallas</Text>
+                  <View style={styles.chipsContainerInline}>
+                    {['S','M','L','XL'].map((s) => {
+                      const sel = filters.sizes.includes(s);
+                      return (
+                        <TouchableOpacity key={s} style={[styles.sizeBtn, sel && styles.sizeBtnActive]} onPress={() => {
+                          const next = sel ? filters.sizes.filter(x => x !== s) : [...filters.sizes, s];
+                          setFilters({ ...filters, sizes: next });
+                        }}>
+                          <Text style={sel ? { color: '#fff' } : { color: '#374151' }}>{s}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <View style={styles.modalSectionRow}>
+                  <Text style={styles.modalLabel}>Solo eco-friendly</Text>
+                  <Switch value={filters.ecoOnly} onValueChange={(v) => setFilters({ ...filters, ecoOnly: v })} thumbColor={filters.ecoOnly ? GREEN : '#fff'} trackColor={{ true: '#A7F3D0', false: '#E5E7EB' }} />
+                </View>
+
+                <View style={styles.footerRow}>
+                  <TouchableOpacity style={styles.clearBtn} onPress={() => setFilters({ minPrice: 0, maxPrice: 200, materials: [], sizes: [], ecoOnly: false })}>
+                    <Text style={{ color: GREEN }}>Limpiar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.applyBtn} onPress={() => { setShowFilters(false); /* filters state already set */ }}>
+                    <Text style={{ color: '#FFFFFF' }}>Aplicar</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={{ height: 40 }} />
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
         
         <FlatList
           horizontal
@@ -294,27 +432,7 @@ const styles = StyleSheet.create({
   categoriesScroll: {
     paddingRight: 20,
   },
-  categoryChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  categoryChipActive: {
-    backgroundColor: GREEN,
-    borderColor: GREEN,
-  },
-  categoryChipText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  categoryChipTextActive: {
-    color: '#FFFFFF',
-  },
+  
   countContainer: {
     paddingHorizontal: 20,
     paddingVertical: 12,
@@ -351,4 +469,38 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6B7280',
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)'
+  },
+  modalContent: {
+    flex: 1,
+    marginTop: 80,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    padding: 16,
+  },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  modalTitle: { fontSize: 18, fontWeight: '800', color: '#1F2937' },
+  modalSection: { marginTop: 12 },
+  modalLabel: { fontSize: 14, fontWeight: '700', color: '#1F2937', marginBottom: 8 },
+  priceInput: { width: 100, borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, padding: 8, color: '#1F2937' },
+  modalSectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 },
+  clearBtn: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB' },
+  applyBtn: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: 8, backgroundColor: GREEN, justifyContent: 'center', alignItems: 'center' },
+  /* new layout helpers for modal */
+  chipsContainer: { flexDirection: 'row', flexWrap: 'wrap', marginVertical: 4 },
+  chipsContainerInline: { flexDirection: 'row', gap: 8, marginVertical: 4 },
+  priceRow: { flexDirection: 'row', alignItems: 'center' },
+  priceSeparator: { marginHorizontal: 8, color: '#6B7280' },
+  footerRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 },
+  categoryChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: '#FFFFFF', marginRight: 8, marginBottom: 8, borderWidth: 1, borderColor: '#E5E7EB' },
+  categoryChipActive: { backgroundColor: GREEN, borderColor: GREEN },
+  categoryChipText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
+  categoryChipTextActive: { color: '#FFFFFF' },
+  materialBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, backgroundColor: '#F3F4F6', marginRight: 8, marginBottom: 8 },
+  materialBtnActive: { backgroundColor: GREEN },
+  sizeBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: '#E5E7EB', marginRight: 8 },
+  sizeBtnActive: { backgroundColor: GREEN, borderColor: GREEN },
 });

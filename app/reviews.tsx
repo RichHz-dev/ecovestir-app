@@ -1,10 +1,12 @@
-import { createReview, getReviews } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
+import { createReview, getReviews } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
 	ActivityIndicator,
+	Alert,
 	AppState,
 	FlatList,
 	RefreshControl,
@@ -14,10 +16,8 @@ import {
 	TextInput,
 	TouchableOpacity,
 	View,
-	Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 
 const GREEN = '#00a63e';
 
