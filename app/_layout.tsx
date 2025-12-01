@@ -2,8 +2,8 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import BottomMenu from '@/components/bottom-menu';
 import { ErrorModalProvider } from '@/components/error-modal';
