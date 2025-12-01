@@ -1,17 +1,18 @@
-import { useAuth } from '@/context/AuthContext';
 import { createReview, getReviews } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useRef, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  AppState,
-  FlatList,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+	ActivityIndicator,
+	AppState,
+	FlatList,
+	RefreshControl,
+	ScrollView,
+	StyleSheet,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -28,7 +29,6 @@ interface Review {
 }
 
 export default function ReviewsScreen() {
-	const { user } = useAuth();
 	const [reviews, setReviews] = useState<Review[]>([
 		{
 			id: '1',
@@ -54,7 +54,6 @@ export default function ReviewsScreen() {
 	const [rating, setRating] = useState(0);
 	const [loading, setLoading] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
-	const POLL_INTERVAL = 10000; // 10s
 	const appState = useRef(AppState.currentState);
 	const pollRef = useRef<number | null>(null);
 
@@ -65,11 +64,20 @@ export default function ReviewsScreen() {
 
 	const totalReviews = reviews.length;
 
-	const fetchReviews = async () => {
+	const fetchReviews = useCallback(async () => {
 		try {
 			setLoading(true);
 			const res = await getReviews({ limit: 50 });
-			const mapped: Review[] = res.data.map((r) => ({
+			const data = res.data || [];
+			// Only show reviews that were approved in the backend. The API may use different
+			// fields for that (status, state, approved, verified or estado), so check common ones.
+			const approved = (data as any[]).filter((r: any) => {
+				if (!r) return false;
+				const hasApprovedStatus = r.status === 'approved' || r.state === 'approved' || r.estado === 'approved';
+				const isVerified = r.verified === true || r.approved === true;
+				return Boolean(hasApprovedStatus && isVerified);
+			});
+			const mapped: Review[] = approved.map((r) => ({
 				id: (r as any)._id,
 				name: (r as any).author || (r as any).productName || 'Usuario',
 				date: (r as any).createdAt ? new Date((r as any).createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : '',
@@ -84,16 +92,11 @@ export default function ReviewsScreen() {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, []);
 
 	useEffect(() => {
 		// initial fetch
 		fetchReviews();
-
-		// polling
-		pollRef.current = setInterval(() => {
-			fetchReviews();
-		}, POLL_INTERVAL);
 
 		// refresh when app comes to foreground
 		const sub = AppState.addEventListener('change', (nextAppState) => {
@@ -104,10 +107,31 @@ export default function ReviewsScreen() {
 		});
 
 		return () => {
-			if (pollRef.current) clearInterval(pollRef.current as any);
 			sub.remove();
 		};
-	}, []);
+	}, [fetchReviews]);
+
+	// While the screen is focused, poll every few seconds so changes made
+	// elsewhere (admin dashboard, etc.) appear here without navigating away.
+	useFocusEffect(
+		useCallback(() => {
+			// initial fetch on focus
+			fetchReviews();
+
+			// start focused polling (5s). Keep interval short for quicker updates,
+			// but only while user is viewing this screen to avoid unnecessary load.
+			pollRef.current = setInterval(() => {
+				fetchReviews();
+			}, 10000) as unknown as number;
+
+			return () => {
+				if (pollRef.current) {
+					clearInterval(pollRef.current as any);
+					pollRef.current = null;
+				}
+			};
+		}, [fetchReviews])
+	);
 
 	const handleSubmit = async () => {
 		if (!title || !comment || rating === 0) {
@@ -121,17 +145,9 @@ export default function ReviewsScreen() {
 			const res = await createReview(body);
 			// backend returns success message; the review will be pending moderation so may not appear in list
 			alert(res.message || 'Reseña enviada. Será publicada tras revisión.');
-			// Optionally prepend a local pending review for immediate feedback
-			const pending: Review = {
-				id: res.data?._id || Date.now().toString(),
-				name: user?.name || 'Usuario',
-				date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
-				rating,
-				title,
-				comment,
-				verified: false,
-			};
-			setReviews([pending, ...reviews]);
+			// Do NOT show the review immediately — it will appear only after backend approval.
+			// The API response and alert below already inform the user that the review
+			// will be published after moderation.
 			setTitle('');
 			setComment('');
 			setRating(0);
@@ -197,10 +213,11 @@ export default function ReviewsScreen() {
 	);
 
 	return (
-		<SafeAreaView style={styles.safe}>
+		<SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']}>
 			<ScrollView
 				contentContainerStyle={styles.container}
 				keyboardShouldPersistTaps="handled"
+				refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchReviews} tintColor={GREEN} />}
 			>
 				{/* Hero Section */}
 				<View style={styles.hero}>
@@ -302,13 +319,15 @@ export default function ReviewsScreen() {
 }
 
 const styles = StyleSheet.create({
-	safe: { flex: 1, backgroundColor: '#F3F4F6' },
+	safe: { flex: 1, backgroundColor: '#FFFFFF' },
 	container: { paddingBottom: 40 },
 	hero: {
 		backgroundColor: GREEN,
-		paddingVertical: 28,
+		paddingTop: 18,
+		paddingBottom: 22,
 		paddingHorizontal: 16,
 		alignItems: 'center',
+		justifyContent: 'center',
 	},
 	heroIcon: {
 		width: 60,
@@ -317,7 +336,7 @@ const styles = StyleSheet.create({
 		backgroundColor: 'rgba(255,255,255,0.18)',
 		alignItems: 'center',
 		justifyContent: 'center',
-		marginBottom: 12,
+		marginBottom: 8,
 	},
 	heroTitle: {
 		color: '#FFFFFF',
@@ -329,7 +348,7 @@ const styles = StyleSheet.create({
 		color: 'rgba(255,255,255,0.95)',
 		fontSize: 13,
 		textAlign: 'center',
-		marginTop: 8,
+		marginTop: 12,
 		lineHeight: 18,
 	},
 
