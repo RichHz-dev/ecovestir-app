@@ -1,4 +1,5 @@
 import { CategoryCard } from '@/components/category-card';
+import { showGlobalError } from '@/components/error-modal';
 import { ProductCard } from '@/components/product-card';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
@@ -9,16 +10,15 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 const GREEN = '#00a63e';
@@ -43,14 +43,13 @@ export default function HomeScreen() {
   const handleCartPress = async () => {
     const loggedIn = await isUserLoggedIn();
     if (!loggedIn) {
-      Alert.alert(
-        'Inicia sesión',
-        'Debes iniciar sesión para ver tu carrito',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Ir a Login', onPress: () => router.push('/login') }
-        ]
-      );
+      showGlobalError({
+        title: 'Inicia sesión',
+        message: 'Debes iniciar sesión para ver tu carrito',
+        secondaryText: 'Cancelar',
+        primaryText: 'Ir a Login',
+        onPrimary: () => router.push('/login'),
+      });
       return;
     }
     router.push('/cart');
@@ -67,7 +66,7 @@ export default function HomeScreen() {
   const handleLogout = async () => {
     setShowUserMenu(false);
     await logout();
-    Alert.alert('Sesión cerrada', 'Has cerrado sesión exitosamente');
+    showGlobalError({ title: 'Sesión cerrada', message: 'Has cerrado sesión exitosamente', primaryText: 'Entendido' });
   };
 
   const handleSearch = async (query: string) => {

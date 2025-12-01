@@ -1,3 +1,4 @@
+import { showGlobalError } from '@/components/error-modal';
 import { useCart } from '@/context/CartContext';
 import { getProducts, isUserLoggedIn } from '@/services/api';
 import { Product } from '@/types/api';
@@ -6,7 +7,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -67,30 +67,21 @@ export default function ProductDetailScreen() {
     const loggedIn = await isUserLoggedIn();
     
     if (!loggedIn) {
-      Alert.alert(
-        'Inicia sesión',
-        'Debes iniciar sesión para agregar productos al carrito',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { 
-            text: 'Ir a Login', 
-            onPress: () => router.push('/login')
-          }
-        ]
-      );
+      showGlobalError({ title: 'Inicia sesión', message: 'Debes iniciar sesión para agregar productos al carrito', secondaryText: 'Cancelar', primaryText: 'Ir a Login', onPrimary: () => router.push('/login') });
       return;
     }
+    
 
     // Verificar que se haya seleccionado una talla
     if (!selectedSize) {
-      Alert.alert('Selecciona una talla', 'Por favor selecciona una talla antes de agregar al carrito');
+      showGlobalError({ title: 'Selecciona una talla', message: 'Por favor selecciona una talla antes de agregar al carrito', primaryText: 'Entendido' });
       return;
     }
 
     // Verificar stock disponible
     const stockAvailable = getStockForSize(selectedSize);
     if (stockAvailable <= 0) {
-      Alert.alert('Sin stock', 'Esta talla no está disponible en este momento');
+      showGlobalError({ title: 'Sin stock', message: 'Esta talla no está disponible en este momento', primaryText: 'Entendido' });
       return;
     }
 
@@ -98,7 +89,7 @@ export default function ProductDetailScreen() {
       await addItem(id!, 1, selectedSize);
       router.push('/cart');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'No se pudo agregar el producto al carrito');
+      showGlobalError({ title: 'Error', message: error.message || 'No se pudo agregar el producto al carrito', primaryText: 'Entendido' });
     }
   };
 

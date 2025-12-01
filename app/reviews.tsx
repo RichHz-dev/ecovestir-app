@@ -1,3 +1,4 @@
+import { showGlobalError } from '@/components/error-modal';
 import { useAuth } from '@/context/AuthContext';
 import { createReview, getReviews } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
@@ -5,17 +6,16 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-	ActivityIndicator,
-	Alert,
-	AppState,
-	FlatList,
-	RefreshControl,
-	ScrollView,
-	StyleSheet,
-	Text,
-	TextInput,
-	TouchableOpacity,
-	View,
+    ActivityIndicator,
+    AppState,
+    FlatList,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -140,27 +140,24 @@ export default function ReviewsScreen() {
 
 	const handleSubmit = async () => {
 		if (!user) {
-			Alert.alert('Inicia sesión', 'Debes iniciar sesión para publicar una reseña', [
-				{ text: 'Cancelar', style: 'cancel' },
-				{ text: 'Ir a Login', onPress: () => router.push('/login') },
-			]);
+				showGlobalError({ title: 'Inicia sesión', message: 'Debes iniciar sesión para publicar una reseña', secondaryText: 'Cancelar', primaryText: 'Ir a Login', onPrimary: () => router.push('/login') });
 			return;
 		}
 
 		// Validations: title only letters, comment must be a non-empty string, rating required
 		const lettersRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/u;
 		if (!title || !lettersRegex.test(title.trim())) {
-			Alert.alert('Error', 'El título solo debe contener letras y espacios');
+			showGlobalError({ title: 'Error', message: 'El título solo debe contener letras y espacios', primaryText: 'Entendido' });
 			return;
 		}
 
 		if (typeof comment !== 'string' || comment.trim().length === 0) {
-			Alert.alert('Error', 'El contenido de la reseña debe ser texto');
+			showGlobalError({ title: 'Error', message: 'El contenido de la reseña debe ser texto', primaryText: 'Entendido' });
 			return;
 		}
 
 		if (rating === 0) {
-			Alert.alert('Por favor selecciona una calificación');
+			showGlobalError({ title: 'Atención', message: 'Por favor selecciona una calificación', primaryText: 'Entendido' });
 			return;
 		}
 
@@ -169,7 +166,7 @@ export default function ReviewsScreen() {
 			const body = { title, content: comment, rating };
 			const res = await createReview(body);
 			// backend returns success message; the review will be pending moderation so may not appear in list
-			alert(res.message || 'Reseña enviada. Será publicada tras revisión.');
+			showGlobalError({ title: 'Gracias', message: res.message || 'Reseña enviada. Será publicada tras revisión.', primaryText: 'Entendido' });
 			// Do NOT show the review immediately — it will appear only after backend approval.
 			// The API response and alert below already inform the user that the review
 			// will be published after moderation.
@@ -178,7 +175,7 @@ export default function ReviewsScreen() {
 			setRating(0);
 		} catch (err: any) {
 			console.error('Error submitting review:', err);
-			alert(err.message || 'Error al enviar reseña');
+			showGlobalError({ title: 'Error', message: err?.message || 'Error al enviar reseña', primaryText: 'Entendido' });
 		} finally {
 			setSubmitting(false);
 		}

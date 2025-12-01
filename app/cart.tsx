@@ -1,17 +1,17 @@
+import { showGlobalError } from '@/components/error-modal';
 import { useCart } from '@/context/CartContext';
 import { CartItem, Product } from '@/types/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -30,50 +30,20 @@ export default function CartScreen() {
     try {
       await updateItemQuantity(productId, newQuantity, size);
     } catch {
-      Alert.alert('Error', 'No se pudo actualizar la cantidad');
+      showGlobalError({ title: 'Error', message: 'No se pudo actualizar la cantidad', primaryText: 'Entendido' });
     }
   };
 
   const handleRemoveItem = async (productId: string, size: string) => {
-    Alert.alert(
-      'Eliminar producto',
-      '¿Estás seguro de eliminar este producto del carrito?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await removeItem(productId, size);
-            } catch {
-              Alert.alert('Error', 'No se pudo eliminar el producto');
-            }
-          },
-        },
-      ]
-    );
+    showGlobalError({ title: 'Eliminar producto', message: '¿Estás seguro de eliminar este producto del carrito?', secondaryText: 'Cancelar', primaryText: 'Eliminar', onPrimary: async () => {
+      try { await removeItem(productId, size); } catch { showGlobalError({ title: 'Error', message: 'No se pudo eliminar el producto', primaryText: 'Entendido' }); }
+    }});
   };
 
   const handleClearCart = () => {
-    Alert.alert(
-      'Vaciar carrito',
-      '¿Estás seguro de vaciar todo el carrito?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Vaciar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await clearCartItems();
-            } catch {
-              Alert.alert('Error', 'No se pudo vaciar el carrito');
-            }
-          },
-        },
-      ]
-    );
+    showGlobalError({ title: 'Vaciar carrito', message: '¿Estás seguro de vaciar todo el carrito?', secondaryText: 'Cancelar', primaryText: 'Vaciar', onPrimary: async () => {
+      try { await clearCartItems(); } catch { showGlobalError({ title: 'Error', message: 'No se pudo vaciar el carrito', primaryText: 'Entendido' }); }
+    }});
   };
 
   const calculateTotal = () => {

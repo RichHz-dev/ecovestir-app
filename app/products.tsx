@@ -1,3 +1,4 @@
+import { showGlobalError } from '@/components/error-modal';
 import { ProductCard } from '@/components/product-card';
 import { useCart } from '@/context/CartContext';
 import { getCategories, getProducts, isUserLoggedIn } from '@/services/api';
@@ -6,17 +7,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -39,14 +39,7 @@ export default function ProductsScreen() {
   const handleCartPress = async () => {
     const loggedIn = await isUserLoggedIn();
     if (!loggedIn) {
-      Alert.alert(
-        'Inicia sesión',
-        'Debes iniciar sesión para ver tu carrito',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Ir a Login', onPress: () => router.push('/login') }
-        ]
-      );
+      showGlobalError({ title: 'Inicia sesión', message: 'Debes iniciar sesión para ver tu carrito', secondaryText: 'Cancelar', primaryText: 'Ir a Login', onPrimary: () => router.push('/login') });
       return;
     }
     router.push('/cart');

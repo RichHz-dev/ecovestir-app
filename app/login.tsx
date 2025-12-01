@@ -1,8 +1,9 @@
+import { showGlobalError } from '@/components/error-modal';
 import { useAuth } from '@/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const logo = require('../assets/logo.png');
@@ -27,37 +28,37 @@ export default function LoginScreen() {
   const handleSubmit = async () => {
     // Validaciones
     if (mode === 'register' && !name.trim()) {
-      Alert.alert('Error', 'Por favor ingresa tu nombre');
+      showGlobalError({ title: 'Error', message: 'Por favor ingresa tu nombre', primaryText: 'Entendido' });
       return;
     }
     
     if (!email.trim()) {
-      Alert.alert('Error', 'Por favor ingresa tu email');
+      showGlobalError({ title: 'Error', message: 'Por favor ingresa tu email', primaryText: 'Entendido' });
       return;
     }
     
     if (!validateEmail(email)) {
-      Alert.alert('Error', 'Por favor ingresa un email válido');
+      showGlobalError({ title: 'Error', message: 'Por favor ingresa un email válido', primaryText: 'Entendido' });
       return;
     }
     
     if (!password) {
-      Alert.alert('Error', 'Por favor ingresa tu contraseña');
+      showGlobalError({ title: 'Error', message: 'Por favor ingresa tu contraseña', primaryText: 'Entendido' });
       return;
     }
     
     if (password.length < 6) {
-      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres');
+      showGlobalError({ title: 'Error', message: 'La contraseña debe tener al menos 6 caracteres', primaryText: 'Entendido' });
       return;
     }
     
     if (mode === 'register' && password !== confirm) {
-      Alert.alert('Error', 'Las contraseñas no coinciden');
+      showGlobalError({ title: 'Error', message: 'Las contraseñas no coinciden', primaryText: 'Entendido' });
       return;
     }
     
     if (mode === 'register' && !acceptTerms) {
-      Alert.alert('Error', 'Debes aceptar los términos y condiciones');
+      showGlobalError({ title: 'Error', message: 'Debes aceptar los términos y condiciones', primaryText: 'Entendido' });
       return;
     }
 
@@ -66,15 +67,13 @@ export default function LoginScreen() {
     try {
       if (mode === 'login') {
         await login(email.toLowerCase().trim(), password);
-        Alert.alert('Éxito', 'Sesión iniciada correctamente');
-        router.replace('/(tabs)');
+        showGlobalError({ title: 'Éxito', message: 'Sesión iniciada correctamente', primaryText: 'Continuar', onPrimary: () => router.replace('/(tabs)') });
       } else {
         await register(name.trim(), email.toLowerCase().trim(), password);
-        Alert.alert('Éxito', 'Cuenta creada correctamente');
-        router.replace('/(tabs)');
+        showGlobalError({ title: 'Éxito', message: 'Cuenta creada correctamente', primaryText: 'Continuar', onPrimary: () => router.replace('/(tabs)') });
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Ocurrió un error');
+      showGlobalError({ title: 'Error', message: error.message || 'Ocurrió un error', primaryText: 'Entendido' });
     } finally {
       setIsLoading(false);
     }

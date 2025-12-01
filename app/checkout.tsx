@@ -1,3 +1,4 @@
+import { showGlobalError } from '@/components/error-modal';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -5,7 +6,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
     Image,
     ScrollView,
     StyleSheet,
@@ -118,7 +118,7 @@ export default function CheckoutScreen() {
 			// Log detailed errors for debugging and show a general alert
 			console.warn('Validación de checkout:', fieldErrors);
 			setErrors(fieldErrors);
-			Alert.alert('Información de envío inválida', 'Revisa los campos del formulario e intenta nuevamente.');
+			showGlobalError({ title: 'Información de envío inválida', message: 'Revisa los campos del formulario e intenta nuevamente.', primaryText: 'Entendido' });
 			return;
 		}
 		// clear previous errors

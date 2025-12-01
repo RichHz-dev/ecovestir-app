@@ -1,9 +1,10 @@
+import { showGlobalError } from '@/components/error-modal';
 import { useCart } from '@/context/CartContext';
 import * as api from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import StepIndicator from '../../components/step-indicator';
 import { clearCheckoutPayload, getCheckoutPayload } from '../lib/checkoutStore';
 
@@ -41,12 +42,12 @@ export default function PaymentScreen() {
 
   const handleConfirm = async () => {
     if (!parsed) {
-      Alert.alert('Error', 'Datos de pago inválidos. Vuelve atrás y completa la información.');
+      showGlobalError({ title: 'Error', message: 'Datos de pago inválidos. Vuelve atrás y completa la información.', primaryText: 'Entendido' });
       return;
     }
 
     if (!cart || cart.length === 0) {
-      Alert.alert('Carrito vacío', 'Tu carrito está vacío.');
+      showGlobalError({ title: 'Carrito vacío', message: 'Tu carrito está vacío.', primaryText: 'Entendido' });
       return;
     }
 
@@ -84,11 +85,11 @@ export default function PaymentScreen() {
       await api.createOrder(body);
       await clearCartItems();
       clearCheckoutPayload();
-      Alert.alert('Orden creada', 'Tu pedido se creó correctamente.');
-      router.replace('/');
+      showGlobalError({ title: 'Orden creada', message: 'Tu pedido se creó correctamente.', primaryText: 'Continuar', onPrimary: () => router.replace('/') });
+      // router.replace will be executed after user taps primary button
     } catch (err: any) {
       console.error('Payment confirm error', err);
-      Alert.alert('Error', err?.message || 'Error al crear la orden');
+      showGlobalError({ title: 'Error', message: err?.message || 'Error al crear la orden', primaryText: 'Entendido' });
     } finally {
       setLoading(false);
     }

@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import 'react-native-reanimated';
 
 import BottomMenu from '@/components/bottom-menu';
+import { ErrorModalProvider } from '@/components/error-modal';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -20,8 +21,9 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <CartProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <View style={styles.outer}>
+        <ErrorModalProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <View style={styles.outer}>
             <Stack initialRouteName="(tabs)">
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="login" options={{ headerShown: false }} />
@@ -49,8 +51,9 @@ export default function RootLayout() {
                 </View>
               );
             })()}
-          </View>
-        </ThemeProvider>
+            </View>
+          </ThemeProvider>
+        </ErrorModalProvider>
       </CartProvider>
     </AuthProvider>
   );

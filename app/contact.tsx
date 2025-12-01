@@ -1,10 +1,10 @@
+import { showGlobalError } from '@/components/error-modal';
 import { sendContactMessage } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     Linking,
     ScrollView,
     StyleSheet,
@@ -43,44 +43,44 @@ export default function ContactScreen() {
   const handleSubmit = async () => {
     // Basic required checks
     if (!formData.nombre || !formData.email || !formData.telefono || !formData.mensaje) {
-      Alert.alert('Error', 'Por favor completa todos los campos obligatorios');
+      showGlobalError({ title: 'Error', message: 'Por favor completa todos los campos obligatorios', primaryText: 'Entendido' });
       return;
     }
 
     // Validate name and subject only contain letters and spaces
     const lettersRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/u;
     if (!lettersRegex.test(formData.nombre.trim())) {
-      Alert.alert('Error', 'El nombre solo debe contener letras y espacios');
+      showGlobalError({ title: 'Error', message: 'El nombre solo debe contener letras y espacios', primaryText: 'Entendido' });
       return;
     }
     if (formData.asunto && !lettersRegex.test(formData.asunto.trim())) {
-      Alert.alert('Error', 'El asunto solo debe contener letras y espacios');
+      showGlobalError({ title: 'Error', message: 'El asunto solo debe contener letras y espacios', primaryText: 'Entendido' });
       return;
     }
 
     // Validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email.trim())) {
-      Alert.alert('Error', 'Por favor ingresa un correo electrónico válido');
+      showGlobalError({ title: 'Error', message: 'Por favor ingresa un correo electrónico válido', primaryText: 'Entendido' });
       return;
     }
 
     // Normalize phone: only digits
     const phoneDigits = (formData.telefono || '').toString().replace(/\D/g, '');
     if (phoneDigits.length !== 9) {
-      Alert.alert('Error', 'El teléfono debe tener exactamente 9 dígitos');
+      showGlobalError({ title: 'Error', message: 'El teléfono debe tener exactamente 9 dígitos', primaryText: 'Entendido' });
       return;
     }
 
     // motivo required
     if (!formData.motivo) {
-      Alert.alert('Error', 'Por favor selecciona un motivo de contacto');
+      showGlobalError({ title: 'Error', message: 'Por favor selecciona un motivo de contacto', primaryText: 'Entendido' });
       return;
     }
 
     // mensaje must be a string
     if (typeof formData.mensaje !== 'string' || formData.mensaje.trim().length === 0) {
-      Alert.alert('Error', 'El mensaje debe ser texto');
+      showGlobalError({ title: 'Error', message: 'El mensaje debe ser texto', primaryText: 'Entendido' });
       return;
     }
 
@@ -95,7 +95,7 @@ export default function ContactScreen() {
         message: formData.mensaje.trim(),
       });
 
-      Alert.alert('Éxito', 'Tu mensaje ha sido enviado. Te contactaremos pronto.');
+      showGlobalError({ title: 'Éxito', message: 'Tu mensaje ha sido enviado. Te contactaremos pronto.', primaryText: 'Entendido' });
       
       // Limpiar formulario
       setFormData({
@@ -107,7 +107,7 @@ export default function ContactScreen() {
         mensaje: '',
       });
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'No se pudo enviar el mensaje. Intenta de nuevo.');
+      showGlobalError({ title: 'Error', message: error.message || 'No se pudo enviar el mensaje. Intenta de nuevo.', primaryText: 'Entendido' });
     } finally {
       setLoading(false);
     }
@@ -122,7 +122,7 @@ export default function ContactScreen() {
   };
 
   const handleChat = () => {
-    Alert.alert('Chat en Vivo', 'Función de chat próximamente disponible');
+    showGlobalError({ title: 'Chat en Vivo', message: 'Función de chat próximamente disponible', primaryText: 'Entendido' });
   };
 
   return (
