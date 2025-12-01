@@ -1,4 +1,5 @@
 import { createReview, getReviews } from '@/services/api';
+import { useAuth } from '@/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -13,8 +14,10 @@ import {
 	TextInput,
 	TouchableOpacity,
 	View,
+	Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 
 const GREEN = '#00a63e';
 
@@ -29,6 +32,8 @@ interface Review {
 }
 
 export default function ReviewsScreen() {
+	const { user } = useAuth();
+	const router = useRouter();
 	const [reviews, setReviews] = useState<Review[]>([
 		{
 			id: '1',
@@ -134,8 +139,16 @@ export default function ReviewsScreen() {
 	);
 
 	const handleSubmit = async () => {
+		if (!user) {
+			Alert.alert('Inicia sesión', 'Debes iniciar sesión para publicar una reseña', [
+				{ text: 'Cancelar', style: 'cancel' },
+				{ text: 'Ir a Login', onPress: () => router.push('/login') },
+			]);
+			return;
+		}
+
 		if (!title || !comment || rating === 0) {
-			alert('Por favor completa todos los campos');
+			Alert.alert('Por favor completa todos los campos');
 			return;
 		}
 

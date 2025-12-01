@@ -1,11 +1,13 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
+import { View, StyleSheet } from 'react-native';
 
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import BottomMenu from '@/components/bottom-menu';
 
 export const unstable_settings = {
   initialRouteName: '(tabs)',
@@ -13,12 +15,14 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const pathname = usePathname();
 
   return (
     <AuthProvider>
       <CartProvider>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack initialRouteName="(tabs)">
+          <View style={styles.outer}>
+            <Stack initialRouteName="(tabs)">
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="login" options={{ headerShown: false }} />
             <Stack.Screen name="products" options={{ headerShown: false }} />
@@ -32,9 +36,28 @@ export default function RootLayout() {
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
             <Stack.Screen name="checkout/payment" options={{ headerShown: false }} />
           </Stack>
-          <StatusBar style="auto" />
+            <StatusBar style="auto" />
+
+            {/* Bottom menu - shown globally except on specific routes */}
+            {(() => {
+              const hideOn = ['/login', '/modal', '/checkout', '/checkout/payment'];
+              const shouldHide = hideOn.some((p) => pathname?.startsWith(p));
+              if (shouldHide) return null;
+              return (
+                <View style={styles.menuWrap} pointerEvents="box-none">
+                  <BottomMenu />
+                </View>
+              );
+            })()}
+          </View>
         </ThemeProvider>
       </CartProvider>
     </AuthProvider>
   );
 }
+
+const MENU_HEIGHT = 72;
+const styles = StyleSheet.create({
+  outer: { flex: 1, paddingBottom: MENU_HEIGHT },
+  menuWrap: { position: 'absolute', left: 0, right: 0, bottom: 0, height: MENU_HEIGHT },
+});
