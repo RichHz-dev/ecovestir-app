@@ -41,30 +41,58 @@ export default function ContactScreen() {
   const [showMotivoSelector, setShowMotivoSelector] = useState(false);
 
   const handleSubmit = async () => {
+    // Basic required checks
     if (!formData.nombre || !formData.email || !formData.telefono || !formData.mensaje) {
       Alert.alert('Error', 'Por favor completa todos los campos obligatorios');
       return;
     }
 
-    if (formData.telefono.length !== 9) {
-      Alert.alert('Error', 'El teléfono debe tener 9 dígitos');
+    // Validate name and subject only contain letters and spaces
+    const lettersRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/u;
+    if (!lettersRegex.test(formData.nombre.trim())) {
+      Alert.alert('Error', 'El nombre solo debe contener letras y espacios');
+      return;
+    }
+    if (formData.asunto && !lettersRegex.test(formData.asunto.trim())) {
+      Alert.alert('Error', 'El asunto solo debe contener letras y espacios');
       return;
     }
 
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      Alert.alert('Error', 'Por favor ingresa un correo electrónico válido');
+      return;
+    }
+
+    // Normalize phone: only digits
+    const phoneDigits = (formData.telefono || '').toString().replace(/\D/g, '');
+    if (phoneDigits.length !== 9) {
+      Alert.alert('Error', 'El teléfono debe tener exactamente 9 dígitos');
+      return;
+    }
+
+    // motivo required
     if (!formData.motivo) {
       Alert.alert('Error', 'Por favor selecciona un motivo de contacto');
+      return;
+    }
+
+    // mensaje must be a string
+    if (typeof formData.mensaje !== 'string' || formData.mensaje.trim().length === 0) {
+      Alert.alert('Error', 'El mensaje debe ser texto');
       return;
     }
 
     try {
       setLoading(true);
       await sendContactMessage({
-        name: formData.nombre,
-        email: formData.email,
-        phone: formData.telefono,
+        name: formData.nombre.trim(),
+        email: formData.email.trim(),
+        phone: phoneDigits,
         reason: formData.motivo as any,
-        subject: formData.asunto,
-        message: formData.mensaje,
+        subject: formData.asunto ? formData.asunto.trim() : '',
+        message: formData.mensaje.trim(),
       });
 
       Alert.alert('Éxito', 'Tu mensaje ha sido enviado. Te contactaremos pronto.');
@@ -130,7 +158,11 @@ export default function ContactScreen() {
               placeholder="Tu nombre"
               placeholderTextColor="#9CA3AF"
               value={formData.nombre}
-              onChangeText={(text) => setFormData({ ...formData, nombre: text })}
+              onChangeText={(text) => {
+                // allow letters, accents, spaces, apostrophes and dashes only
+                const cleaned = text.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'-]/g, '');
+                setFormData({ ...formData, nombre: cleaned });
+              }}
             />
           </View>
 
@@ -144,7 +176,11 @@ export default function ContactScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               value={formData.email}
-              onChangeText={(text) => setFormData({ ...formData, email: text })}
+              onChangeText={(text) => {
+                // remove spaces and illegal characters for emails
+                const cleaned = text.replace(/[^\w.@+\-]/g, '');
+                setFormData({ ...formData, email: cleaned });
+              }}
             />
           </View>
 
@@ -157,7 +193,11 @@ export default function ContactScreen() {
               placeholderTextColor="#9CA3AF"
               keyboardType="phone-pad"
               value={formData.telefono}
-              onChangeText={(text) => setFormData({ ...formData, telefono: text })}
+              onChangeText={(text) => {
+                // allow only digits and limit to 9 characters
+                const cleaned = text.replace(/\D/g, '').slice(0, 9);
+                setFormData({ ...formData, telefono: cleaned });
+              }}
             />
           </View>
 
@@ -204,7 +244,11 @@ export default function ContactScreen() {
               placeholder="Asunto de tu mensaje"
               placeholderTextColor="#9CA3AF"
               value={formData.asunto}
-              onChangeText={(text) => setFormData({ ...formData, asunto: text })}
+              onChangeText={(text) => {
+                // allow only letters and spaces for subject
+                const cleaned = text.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'-]/g, '');
+                setFormData({ ...formData, asunto: cleaned });
+              }}
             />
           </View>
 
@@ -219,7 +263,11 @@ export default function ContactScreen() {
               numberOfLines={5}
               textAlignVertical="top"
               value={formData.mensaje}
-              onChangeText={(text) => setFormData({ ...formData, mensaje: text })}
+              onChangeText={(text) => {
+                // strip control characters
+                const cleaned = text.replace(/[\x00-\x1F]/g, '');
+                setFormData({ ...formData, mensaje: cleaned });
+              }}
             />
           </View>
 

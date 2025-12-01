@@ -147,8 +147,20 @@ export default function ReviewsScreen() {
 			return;
 		}
 
-		if (!title || !comment || rating === 0) {
-			Alert.alert('Por favor completa todos los campos');
+		// Validations: title only letters, comment must be a non-empty string, rating required
+		const lettersRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/u;
+		if (!title || !lettersRegex.test(title.trim())) {
+			Alert.alert('Error', 'El título solo debe contener letras y espacios');
+			return;
+		}
+
+		if (typeof comment !== 'string' || comment.trim().length === 0) {
+			Alert.alert('Error', 'El contenido de la reseña debe ser texto');
+			return;
+		}
+
+		if (rating === 0) {
+			Alert.alert('Por favor selecciona una calificación');
 			return;
 		}
 
@@ -273,7 +285,11 @@ export default function ReviewsScreen() {
 						<Text style={styles.label}>Título *</Text>
 						<TextInput
 							value={title}
-							onChangeText={setTitle}
+							onChangeText={(text) => {
+								// allow only letters, accents and spaces for title
+								const cleaned = text.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'-]/g, '');
+								setTitle(cleaned);
+							}}
 							placeholder="Resumen de tu experiencia"
 							placeholderTextColor="#9CA3AF"
 							style={styles.input}
@@ -282,7 +298,11 @@ export default function ReviewsScreen() {
 						<Text style={styles.label}>Tu Reseña *</Text>
 						<TextInput
 							value={comment}
-							onChangeText={setComment}
+							onChangeText={(text) => {
+								// remove control characters from comment
+								const cleaned = text.replace(/[\x00-\x1F]/g, '');
+								setComment(cleaned);
+							}}
 							placeholder="Cuéntanos sobre tu experiencia con EcoVestir..."
 							placeholderTextColor="#9CA3AF"
 							style={[styles.input, styles.textarea]}
