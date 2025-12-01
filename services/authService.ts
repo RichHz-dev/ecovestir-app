@@ -38,7 +38,8 @@ class AuthService {
       
       return response.data;
     } catch (error: any) {
-      console.error('Register error:', error.response?.data || error.message);
+      // Avoid logging full error object to prevent raw JSON appearing in UI overlays.
+      // The caller (AuthContext) will extract and surface a user-friendly message.
       throw error;
     }
   }
@@ -56,7 +57,7 @@ class AuthService {
       
       return response.data;
     } catch (error: any) {
-      console.error('Login error:', error.response?.data || error.message);
+      // Avoid logging full error object here for the same reason as above.
       throw error;
     }
   }

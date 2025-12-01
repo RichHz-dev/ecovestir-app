@@ -1,70 +1,102 @@
-import { useAuth } from '@/contexts/AuthContext';
+import { showGlobalError } from '@/components/error-modal';
+import { useAuth } from '@/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const logo = require('../assets/logo.png');
 
 export default function LoginScreen() {
   const { login, register } = useAuth();
+  const router = useRouter();
   
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [confirm, setConfirm] = useState('');
+  // Separate state for login and register so inputs are preserved when switching modes
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  const [registerName, setRegisterName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [registerConfirm, setRegisterConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [registerAcceptTerms, setRegisterAcceptTerms] = useState(false);
 
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
+  // Name: letters, accents, spaces, apostrophes and hyphens
+  const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]{2,}$/u;
+  // Password: at least 6 chars, includes letters and numbers
+  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{6,}$/;
+
   const handleSubmit = async () => {
+    // Use mode-specific values
+    const name = mode === 'register' ? registerName : '';
+    const email = mode === 'register' ? registerEmail : loginEmail;
+    const password = mode === 'register' ? registerPassword : loginPassword;
+    const confirm = mode === 'register' ? registerConfirm : '';
+    const accepted = mode === 'register' ? registerAcceptTerms : true;
+
     // Validaciones
-    if (mode === 'register' && !name.trim()) {
-      Alert.alert('Error', 'Por favor ingresa tu nombre');
-      return;
+    if (mode === 'register') {
+      if (!name.trim()) {
+        showGlobalError({ title: 'Error', message: 'Por favor ingresa tu nombre', primaryText: 'Entendido' });
+        return;
+      }
+      if (!nameRegex.test(name.trim())) {
+        showGlobalError({ title: 'Error', message: 'El nombre solo debe contener letras, espacios, guiones o apóstrofes', primaryText: 'Entendido' });
+        return;
+      }
     }
-    
+
     if (!email.trim()) {
-      Alert.alert('Error', 'Por favor ingresa tu email');
+      showGlobalError({ title: 'Error', message: 'Por favor ingresa tu email', primaryText: 'Entendido' });
       return;
     }
-    
+
     if (!validateEmail(email)) {
-      Alert.alert('Error', 'Por favor ingresa un email válido');
+      showGlobalError({ title: 'Error', message: 'Por favor ingresa un email válido', primaryText: 'Entendido' });
       return;
     }
-    
+
     if (!password) {
-      Alert.alert('Error', 'Por favor ingresa tu contraseña');
+      showGlobalError({ title: 'Error', message: 'Por favor ingresa tu contraseña', primaryText: 'Entendido' });
       return;
     }
-    
-    if (password.length < 6) {
-      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres');
+
+    // Only enforce complexity/length for registrations. For login, only require a non-empty password.
+    if (mode === 'register' && !passwordRegex.test(password)) {
+      showGlobalError({ title: 'Error', message: 'La contraseña debe tener al menos 6 caracteres e incluir letras y números', primaryText: 'Entendido' });
       return;
     }
-    
+
     if (mode === 'register' && password !== confirm) {
-      Alert.alert('Error', 'Las contraseñas no coinciden');
+      showGlobalError({ title: 'Error', message: 'Las contraseñas no coinciden', primaryText: 'Entendido' });
+      return;
+    }
+
+    if (mode === 'register' && !accepted) {
+      showGlobalError({ title: 'Error', message: 'Debes aceptar los términos y condiciones', primaryText: 'Entendido' });
       return;
     }
 
     setIsLoading(true);
-    
+
     try {
       if (mode === 'login') {
-        await login(email.toLowerCase().trim(), password);
-        Alert.alert('Éxito', 'Sesión iniciada correctamente');
+        await login(loginEmail.toLowerCase().trim(), loginPassword);
+        showGlobalError({ title: 'Éxito', message: 'Sesión iniciada correctamente', primaryText: 'Continuar', onPrimary: () => router.replace('/(tabs)') });
       } else {
-        await register(name.trim(), email.toLowerCase().trim(), password);
-        Alert.alert('Éxito', 'Cuenta creada correctamente');
+        await register(registerName.trim(), registerEmail.toLowerCase().trim(), registerPassword);
+        showGlobalError({ title: 'Éxito', message: 'Cuenta creada correctamente', primaryText: 'Continuar', onPrimary: () => router.replace('/(tabs)') });
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Ocurrió un error');
+      showGlobalError({ title: 'Error', message: error.message || 'Ocurrió un error', primaryText: 'Entendido' });
     } finally {
       setIsLoading(false);
     }
@@ -98,8 +130,12 @@ export default function LoginScreen() {
               <View style={styles.inputRow}>
                 <Ionicons name="person-outline" size={18} color="#6b7280" style={styles.inputIcon} />
                 <TextInput
-                  value={name}
-                  onChangeText={setName}
+                  value={registerName}
+                  onChangeText={(text) => {
+                    // allow only letters, accents, spaces, apostrophe and hyphen
+                    const cleaned = text.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'\-]/g, '');
+                    setRegisterName(cleaned);
+                  }}
                   placeholder="Tu nombre completo"
                   style={styles.input}
                   placeholderTextColor="#9ca3af"
@@ -113,8 +149,12 @@ export default function LoginScreen() {
             <View style={styles.inputRow}>
               <Ionicons name="mail-outline" size={18} color="#6b7280" style={styles.inputIcon} />
               <TextInput
-                value={email}
-                onChangeText={setEmail}
+                value={mode === 'login' ? loginEmail : registerEmail}
+                onChangeText={(text) => {
+                  const cleaned = text.replace(/\s/g, '').toLowerCase();
+                  if (mode === 'login') setLoginEmail(cleaned);
+                  else setRegisterEmail(cleaned);
+                }}
                 placeholder="tu@email.com"
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -129,8 +169,12 @@ export default function LoginScreen() {
             <View style={styles.inputRow}>
               <Ionicons name="lock-closed-outline" size={18} color="#6b7280" style={styles.inputIcon} />
               <TextInput
-                value={password}
-                onChangeText={setPassword}
+                value={mode === 'login' ? loginPassword : registerPassword}
+                onChangeText={(text) => {
+                  const cleaned = text.replace(/[\x00-\x1F]/g, '');
+                  if (mode === 'login') setLoginPassword(cleaned);
+                  else setRegisterPassword(cleaned);
+                }}
                 placeholder="........"
                 secureTextEntry={!showPassword}
                 style={styles.input}
@@ -148,8 +192,8 @@ export default function LoginScreen() {
               <View style={styles.inputRow}>
                 <Ionicons name="lock-closed-outline" size={18} color="#6b7280" style={styles.inputIcon} />
                 <TextInput
-                  value={confirm}
-                  onChangeText={setConfirm}
+                  value={registerConfirm}
+                  onChangeText={(text) => setRegisterConfirm(text.replace(/[\x00-\x1F]/g, ''))}
                   placeholder="........"
                   secureTextEntry={!showPassword}
                   style={styles.input}
@@ -162,6 +206,26 @@ export default function LoginScreen() {
           {mode === 'login' && (
             <TouchableOpacity style={styles.forgotLink} onPress={() => {}}>
               <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
+            </TouchableOpacity>
+          )}
+
+          {mode === 'register' && (
+            <TouchableOpacity 
+              style={styles.termsContainer} 
+              onPress={() => setRegisterAcceptTerms(!registerAcceptTerms)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.checkbox, registerAcceptTerms && styles.checkboxActive]}>
+                {registerAcceptTerms && (
+                  <Ionicons name="checkmark" size={16} color="#fff" />
+                )}
+              </View>
+              <Text style={styles.termsText}>
+                Acepto los{' '}
+                <Text style={styles.termsLink}>términos y condiciones</Text>
+                {' '}y la{' '}
+                <Text style={styles.termsLink}>política de privacidad</Text>
+              </Text>
             </TouchableOpacity>
           )}
 
@@ -195,6 +259,10 @@ export default function LoginScreen() {
             </View>
           )}
         </View>
+
+        <TouchableOpacity style={styles.backButton} onPress={() => router.push('/(tabs)')}>
+          <Text style={styles.backButtonText}>Volver al Inicio</Text>
+        </TouchableOpacity>
 
       </ScrollView>
     </SafeAreaView>
@@ -230,5 +298,12 @@ const styles = StyleSheet.create({
   primaryButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   bottomNote: { flexDirection: 'row', justifyContent: 'center', marginTop: 16 },
   small: { color: '#6b7280', fontSize: 14 },
-  inlineLinkText: { color: GREEN, fontSize: 14, fontWeight: '600' }
+  inlineLinkText: { color: GREEN, fontSize: 14, fontWeight: '600' },
+  backButton: { width: '100%', maxWidth: 400, marginTop: 20, borderWidth: 2, borderColor: GREEN, borderRadius: 10, paddingVertical: 14, alignItems: 'center', backgroundColor: 'transparent' },
+  backButtonText: { color: GREEN, fontSize: 16, fontWeight: '600' },
+  termsContainer: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16, marginTop: 4 },
+  checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: '#d1d5db', marginRight: 10, marginTop: 2, justifyContent: 'center', alignItems: 'center' },
+  checkboxActive: { backgroundColor: GREEN, borderColor: GREEN },
+  termsText: { flex: 1, fontSize: 13, color: '#6b7280', lineHeight: 18 },
+  termsLink: { color: GREEN, fontWeight: '600' }
 });
