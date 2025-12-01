@@ -335,7 +335,7 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={GREEN} />
@@ -747,7 +747,9 @@ const styles = StyleSheet.create({
   benefitsSection: {
     padding: 24,
     backgroundColor: '#FFFFFF',
-    marginBottom: 24,
+    marginBottom: 0,
+    flex: 1,
+    justifyContent: 'space-between',
   },
   benefitsTitle: {
     fontSize: 24,
@@ -784,7 +786,10 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   bottomSpacer: {
-    height: 40,
+    height: 0,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   loadingContainer: {
     flex: 1,
