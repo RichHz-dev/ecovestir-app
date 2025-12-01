@@ -325,10 +325,6 @@ export default function ProductDetailScreen() {
           <Ionicons name="cart-outline" size={20} color="#FFFFFF" />
           <Text style={styles.addToCartText}>Añadir a la cesta</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.addToFavoritesButton}>
-          <Ionicons name="heart-outline" size={20} color={GREEN} />
-          <Text style={styles.addToFavoritesText}>Agregar a Favoritos</Text>
-        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
