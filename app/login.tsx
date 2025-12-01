@@ -103,7 +103,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <View style={styles.logoRow}>
@@ -273,7 +273,7 @@ const GREEN = '#00a63e';
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#E8F5EE' },
-  container: { padding: 24, alignItems: 'center', justifyContent: 'center', minHeight: '100%' },
+  container: { padding: 24, alignItems: 'center', justifyContent: 'center', minHeight: '100%', flexGrow: 1 },
   header: { marginTop: 20, marginBottom: 24, alignItems: 'center' },
   logoRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   logo: { width: 44, height: 44 },
