@@ -10,6 +10,7 @@ import { ErrorModalProvider } from '@/components/error-modal';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import VoiceflowChat from '../components/voiceflow-chat';
 
 export const unstable_settings = {
   initialRouteName: '(tabs)',
@@ -52,6 +53,14 @@ export default function RootLayout() {
                       <BottomMenu />
                     </View>
                   );
+                })()}
+
+                {/* Chatbot flotante - shown globally except on login/checkout */}
+                {(() => {
+                  const hideOn = ['/login', '/modal', '/checkout', '/checkout/payment'];
+                  const shouldHide = hideOn.some((p) => pathname?.startsWith(p));
+                  if (shouldHide) return null;
+                  return <VoiceflowChat />;
                 })()}
               </View>
             </SafeAreaView>
