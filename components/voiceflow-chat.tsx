@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+// datos
 const GREEN = '#00a63e';
 const API_KEY = 'VF.DM.692fd4fcf3a255a2a2446923.rtlXKr011uGSQ391';
 const PROJECT_ID = '692e2eedbf6fe4e7b6d06a53';
