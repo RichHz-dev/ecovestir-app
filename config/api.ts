@@ -16,7 +16,8 @@ const getApiUrl = () => {
     return 'http://localhost:4000/api';
   }
   // Producción (cuando hagas build para publicar)
-  return 'https://tu-backend-url.com/api';
+  // Apuntar al backend desplegado en Render
+  return 'https://ecovestir.onrender.com/api';
 };
 
 export const API_BASE_URL = getApiUrl();

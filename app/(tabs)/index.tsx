@@ -10,15 +10,15 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 const GREEN = '#00a63e';
@@ -448,7 +448,7 @@ export default function HomeScreen() {
           </View>
           {categories.length > 0 ? (
             <>
-              {categories.slice(0, 3).map((category) => (
+              {categories.slice(0, 2).map((category) => (
                 <CategoryCard
                   key={category._id}
                   title={category.name}
