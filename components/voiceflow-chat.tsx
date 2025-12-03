@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const GREEN = '#00a63e';
 const API_KEY = 'VF.DM.692fd4fcf3a255a2a2446923.rtlXKr011uGSQ391';
@@ -12,7 +12,11 @@ interface Message {
   timestamp: Date;
 }
 
-export default function VoiceflowChat() {
+interface VoiceflowChatProps {
+  onClose?: () => void;
+}
+
+export default function VoiceflowChat({ onClose }: VoiceflowChatProps = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -163,19 +167,31 @@ export default function VoiceflowChat() {
     setIsOpen(false);
     setTimeout(() => {
       setMessages([]);
+      if (onClose) {
+        onClose();
+      }
     }, 300);
   };
 
+  // Si onClose está definido, abrir automáticamente
+  useEffect(() => {
+    if (onClose) {
+      setIsOpen(true);
+    }
+  }, [onClose]);
+
   return (
     <>
-      {/* Botón flotante */}
-      <TouchableOpacity
-        style={styles.floatingButton}
-        onPress={() => setIsOpen(true)}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="chatbubble-ellipses" size={28} color="#fff" />
-      </TouchableOpacity>
+      {/* Botón flotante - solo mostrar si no hay onClose */}
+      {!onClose && (
+        <TouchableOpacity
+          style={styles.floatingButton}
+          onPress={() => setIsOpen(true)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="chatbubble-ellipses" size={28} color="#fff" />
+        </TouchableOpacity>
+      )}
 
       {/* Modal con el chat */}
       <Modal
@@ -189,14 +205,26 @@ export default function VoiceflowChat() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={0}
         >
-          {/* Header */}
+          {/* Header con logo y nombre */}
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Asistente Virtual</Text>
+            <View style={styles.headerLeft}>
+              <View style={styles.logoContainer}>
+                <Image 
+                  source={require('@/assets/logo.png')} 
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
+              </View>
+              <View>
+                <Text style={styles.headerTitle}>Ecobot</Text>
+                <Text style={styles.headerSubtitle}>Tu Asistente Virtual</Text>
+              </View>
+            </View>
             <TouchableOpacity
               style={styles.closeButton}
               onPress={handleClose}
             >
-              <Ionicons name="close" size={28} color="#fff" />
+              <Ionicons name="close" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
 
@@ -208,24 +236,43 @@ export default function VoiceflowChat() {
             onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
           >
             {messages.map((msg, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.messageBubble,
-                  msg.type === 'user' ? styles.userBubble : styles.botBubble
-                ]}
-              >
-                <Text style={[
-                  styles.messageText,
-                  msg.type === 'user' ? styles.userText : styles.botText
-                ]}>
-                  {msg.text}
-                </Text>
+              <View key={index} style={styles.messageWrapper}>
+                {msg.type === 'bot' && (
+                  <View style={styles.botAvatarContainer}>
+                    <Image 
+                      source={require('@/assets/logo.png')} 
+                      style={styles.botAvatar}
+                      resizeMode="contain"
+                    />
+                  </View>
+                )}
+                <View
+                  style={[
+                    styles.messageBubble,
+                    msg.type === 'user' ? styles.userBubble : styles.botBubble
+                  ]}
+                >
+                  <Text style={[
+                    styles.messageText,
+                    msg.type === 'user' ? styles.userText : styles.botText
+                  ]}>
+                    {msg.text}
+                  </Text>
+                </View>
               </View>
             ))}
             {isLoading && (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color={GREEN} />
+              <View style={styles.messageWrapper}>
+                <View style={styles.botAvatarContainer}>
+                  <Image 
+                    source={require('@/assets/logo.png')} 
+                    style={styles.botAvatar}
+                    resizeMode="contain"
+                  />
+                </View>
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color={GREEN} />
+                </View>
               </View>
             )}
           </ScrollView>
@@ -236,7 +283,7 @@ export default function VoiceflowChat() {
               style={styles.input}
               value={inputText}
               onChangeText={setInputText}
-              placeholder="Escribe tu mensaje..."
+              placeholder="Message..."
               placeholderTextColor="#999"
               multiline
               maxLength={500}
@@ -248,8 +295,13 @@ export default function VoiceflowChat() {
               onPress={sendMessage}
               disabled={!inputText.trim() || isLoading}
             >
-              <Ionicons name="send" size={20} color="#fff" />
+              <Ionicons name="send" size={18} color="#fff" />
             </TouchableOpacity>
+          </View>
+
+          {/* Powered by Voiceflow */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Powered by Voiceflow</Text>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -260,7 +312,7 @@ export default function VoiceflowChat() {
 const styles = StyleSheet.create({
   floatingButton: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 90,
     right: 20,
     width: 60,
     height: 60,
@@ -277,49 +329,95 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff',
   },
   header: {
     backgroundColor: GREEN,
-    paddingTop: 40,
-    paddingBottom: 12,
+    paddingTop: 14,
+    paddingBottom: 16,
     paddingHorizontal: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
-  closeButton: {
+  logoContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  logo: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 2,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
   messagesContainer: {
     flex: 1,
+    backgroundColor: '#f5f5f5',
   },
   messagesContent: {
     padding: 16,
     paddingBottom: 8,
   },
-  messageBubble: {
-    maxWidth: '80%',
-    padding: 12,
+  messageWrapper: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    alignItems: 'flex-end',
+  },
+  botAvatarContainer: {
+    width: 32,
+    height: 32,
     borderRadius: 16,
-    marginBottom: 8,
+    backgroundColor: GREEN,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    overflow: 'hidden',
+  },
+  botAvatar: {
+    width: 24,
+    height: 24,
+    tintColor: '#fff',
+  },
+  messageBubble: {
+    maxWidth: '75%',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 18,
   },
   userBubble: {
     alignSelf: 'flex-end',
     backgroundColor: GREEN,
+    marginLeft: 'auto',
   },
   botBubble: {
     alignSelf: 'flex-start',
-    backgroundColor: '#fff',
+    backgroundColor: '#e8e8e8',
+    borderBottomLeftRadius: 4,
   },
   messageText: {
     fontSize: 15,
@@ -329,15 +427,19 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   botText: {
-    color: '#333',
+    color: '#000',
   },
   loadingContainer: {
-    alignSelf: 'flex-start',
-    padding: 12,
+    backgroundColor: '#e8e8e8',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 18,
+    borderBottomLeftRadius: 4,
   },
   inputContainer: {
     flexDirection: 'row',
     padding: 12,
+    paddingBottom: 8,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
@@ -355,9 +457,9 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: GREEN,
     justifyContent: 'center',
     alignItems: 'center',
@@ -365,5 +467,15 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#ccc',
+  },
+  footer: {
+    paddingVertical: 8,
+    paddingBottom: 12,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 11,
+    color: '#999',
   },
 });

@@ -1,17 +1,18 @@
 import { showGlobalError } from '@/components/error-modal';
+import VoiceflowChat from '@/components/voiceflow-chat';
 import { sendContactMessage } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
-  Linking,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Linking,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -28,6 +29,7 @@ const MOTIVOS = [
 ];
 
 export default function ContactScreen() {
+  const [showChat, setShowChat] = useState(false);
   const router = useRouter();
   const [formData, setFormData] = useState({
     nombre: '',
@@ -133,7 +135,7 @@ export default function ContactScreen() {
   
 
   const handleChat = () => {
-    showGlobalError({ title: 'Chat en Vivo', message: 'Función de chat próximamente disponible', primaryText: 'Entendido' });
+    setShowChat(true);
   };
 
   return (
@@ -394,6 +396,9 @@ export default function ContactScreen() {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      {/* Chatbot modal */}
+      {showChat && <VoiceflowChat onClose={() => setShowChat(false)} />}
     </SafeAreaView>
   );
 }
